@@ -3,7 +3,7 @@
 #include <string.h>
 #include <pthread.h>
 
-#define THRESH 0.0001
+#define THRESH 0.001
 #define NUM_COLORS 10
 #define NUM_ROOTS 4 //for testing
 
@@ -91,7 +91,6 @@ int main(int argc, char *argv[])
 {
     long p_t, p_l;
     char *endptr;
-    double t1, t2, t3, t4;
 
     if(argc != 4)
     {
@@ -111,19 +110,23 @@ int main(int argc, char *argv[])
     long const param_l = p_l;
     long const exponent = strtol(argv[argc-1], &endptr, 10);
 
-    pthread_t thread_id[param_t];
-    for(int i=0; i<param_t; ++i)
+    if(param_t > 1)
     {
-        pthread_create(&thread_id[i], NULL, &thread_placeholder, NULL);
-    }
+        pthread_t thread_id[param_t];
+        for(int i=0; i<param_t; ++i)
+        {
+            pthread_create(&thread_id[i], NULL, &thread_placeholder, NULL);
+        }
 
-    for(int i=0; i<param_t; ++i)
-        pthread_join(thread_id[i],NULL);
+        for(int i=0; i<param_t; ++i)
+            pthread_join(thread_id[i],NULL);
+    }
 
     //storing parameter values as string to write later
     char string_l[10];
     char string_t[5];
     char char_exponent[1];
+    char header[30] = "P3\n";
     sprintf(string_l, "%ld", param_l);
     sprintf(string_t, "%ld", param_t);
     sprintf(char_exponent, "%ld", exponent);
@@ -134,6 +137,10 @@ int main(int argc, char *argv[])
     strcat(filename_attractors, ".ppm");
     strcat(filename_convergence, char_exponent);
     strcat(filename_convergence, ".ppm");
+    strcat(header, string_l);
+    strcat(header, " ");
+    strcat(header, string_l);
+    strcat(header, "\n255\n");
 
     printf("t = %ld, l = %ld, exponent is %ld\n", param_t, param_l, exponent);
     printf("filename1: %s\n", filename_attractors);
@@ -141,10 +148,9 @@ int main(int argc, char *argv[])
 
     double** roots_list = precomputed_roots(exponent);
 
-
-    double ** as = (double**) malloc(sizeof(double*) * param_l); //array of roots
+    int ** as = (int**) malloc(sizeof(int*) * param_l); //array of roots
     for ( size_t ix = 0; ix < param_l; ++ix )
-        as[ix] = (double*) malloc(sizeof(double) * param_l);
+        as[ix] = (int*) malloc(sizeof(int) * param_l);
 
     int ** it = (int**) malloc(sizeof(int*) * param_l); //array of iterations
     for ( size_t ix = 0; ix < param_l; ++ix )
@@ -211,6 +217,7 @@ int main(int argc, char *argv[])
             double im = 4.0*(jx - param_l/2.0)/(double)param_l;
 
             double d_re, d_im, f_re, f_im;
+            double t1, t2, t3, t4;
             int converged = 0;
             int root = 0;
 
@@ -222,15 +229,14 @@ int main(int argc, char *argv[])
                 div_im(&f_re, &f_im, &d_re, &d_im, &t1, &t2);
                 re = re - t1;
                 im = im - t2;
-
-                if(it[ix][jx] > 50){
-                    converged = 1;
-                    root = 0;
-                    break;
-                }
                 if(re*re > 1000 || im*im > 1000){
                     converged = 1;
                     root = exponent;
+                    break;
+                }
+                if(it[ix][jx] > 50){
+                    converged = 1;
+                    root = 0;
                     break;
                 }
                 for(int i = 0; i < NUM_ROOTS; i++)
@@ -251,7 +257,8 @@ int main(int argc, char *argv[])
     FILE * pFile;
     pFile = fopen(filename_attractors, "w");
 
-    fprintf(pFile, "P3\n%ld %ld\n255\n", param_l, param_l); //should be replaced by fwrite?
+    //fprintf(pFile, "P3\n%ld %ld\n255\n", param_l, param_l);
+    fwrite(&header, sizeof(char), strlen(header), pFile);
 
     for ( int ix=0; ix < param_l; ++ix ) {
         char pixels[15 * param_l + 1];
@@ -279,7 +286,8 @@ int main(int argc, char *argv[])
 
     pFile = fopen(filename_convergence, "w");
 
-    fprintf(pFile, "P3\n%ld %ld\n255\n", param_l, param_l); //should be replaced by fwrite?
+    //fprintf(pFile, "P3\n%ld %ld\n255\n", param_l, param_l);
+    fwrite(&header, sizeof(char), strlen(header), pFile);
 
     for ( int ix=0; ix < param_l; ++ix ) {
         char pixels[15 * param_l + 1];
