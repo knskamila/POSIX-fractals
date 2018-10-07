@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 #define THRESH 0.0001
-#define NUM_COLORS 4
+#define NUM_COLORS 10
 #define NUM_ROOTS 4 //for testing
 
 void mul_im(double* a_re, double* a_im, double* b_re, double* b_im, double* c_re, double* c_im)
@@ -81,6 +82,11 @@ double** precomputed_roots(int d)
     }
 }
 
+void* thread_placeholder(void)
+{
+    //
+}
+
 int main(int argc, char *argv[])
 {
     long p_t, p_l;
@@ -104,6 +110,15 @@ int main(int argc, char *argv[])
     long const param_t = p_t;
     long const param_l = p_l;
     long const exponent = strtol(argv[argc-1], &endptr, 10);
+
+    pthread_t thread_id[param_t];
+    for(int i=0; i<param_t; ++i)
+    {
+        pthread_create(&thread_id[i], NULL, &thread_placeholder, NULL);
+    }
+
+    for(int i=0; i<param_t; ++i)
+        pthread_join(thread_id[i],NULL);
 
     //storing parameter values as string to write later
     char string_l[10];
@@ -163,6 +178,30 @@ int main(int argc, char *argv[])
     color_table[3][0] = 200;
     color_table[3][1] = 200;
     color_table[3][2] = 250;
+
+    color_table[4][0] = 130;
+    color_table[4][1] = 0;
+    color_table[4][2] = 130;
+
+    color_table[5][0] = 100;
+    color_table[5][1] = 0;
+    color_table[5][2] = 50;
+
+    color_table[6][0] = 180;
+    color_table[6][1] = 0;
+    color_table[6][2] = 90;
+
+    color_table[7][0] = 255;
+    color_table[7][1] = 165;
+    color_table[7][2] = 0;
+
+    color_table[8][0] = 220;
+    color_table[8][1] = 225;
+    color_table[8][2] = 0;
+
+    color_table[9][0] = 100;
+    color_table[9][1] = 255;
+    color_table[9][2] = 150;
 
 
     //-----------------------------------------COMPUTATION 1:
