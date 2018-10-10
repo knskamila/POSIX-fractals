@@ -29,7 +29,7 @@ void div_im(double* a_re, double* a_im, double* b_re, double* b_im, double* c_re
     }
 }
 
-void derivative(int d, double* re, double* im, double* d_re, double* d_im)
+void derivative(int d, double* re, double* im, double* d_re, double* d_im, double * t_re, double * t_im)
 {
     if(d == 3) //3 x^2
     {
@@ -40,9 +40,11 @@ void derivative(int d, double* re, double* im, double* d_re, double* d_im)
 
     else if(d == 5) //5 x^4
     {
-        mul_im(re, im, re, im, d_re, d_im); //not finished
-        *d_re = *d_re * 3;
-        *d_im = *d_im * 3;
+        mul_im(re, im, re, im, d_re, d_im);
+        mul_im(d_re, d_im, re, im, t_re, t_im);
+        mul_im(t_re, t_im, re, im, d_re, d_im);
+        *d_re = *d_re * 5;
+        *d_im = *d_im * 5;
     }
 }
 
@@ -64,11 +66,11 @@ void fun_val(int d, double* re, double* im, double* f_re, double* f_im, double* 
         *f_re = *re;
         *f_im = *im;
         mul_im(re, im, re, im, t1_re, t1_im);
-        mul_im(t1_re, t1_im, t1_re, t1_im, t1_re, t1_im);
-        mul_im(t1_re, t1_im, f_re, f_im, t2_re, t2_im);
+        mul_im(t1_re, t1_im, t1_re, t1_im, t2_re, t2_im);
+        mul_im(t2_re, t2_im, f_re, f_im, t1_re, t1_im);
 
-        *f_re = *t2_re - 1;
-        *f_im = *t2_im;
+        *f_re = *t1_re - 1;
+        *f_im = *t1_im;
     }
 }
 
@@ -92,6 +94,27 @@ double** precomputed_roots(int d)
         as[2][1] = 0.866;
         as[3][0] = -0.5;
         as[3][1] = -0.866;
+        return as;
+    }
+    if(d == 5)
+    {
+        double ** as = (double**) malloc(sizeof(double*) * 6);
+            for ( size_t ix = 0; ix < 4; ++ix )
+                as[ix] = (double*) malloc(sizeof(double) * 2);
+        as[0][0] = 0;
+        as[0][1] = 0;
+        as[1][0] = 1;
+        as[1][1] = 0;
+
+        as[2][0] = -0.809;
+        as[2][1] = 0.58779;
+        as[3][0] = -0.809;
+        as[3][1] = -0.58779;
+
+        as[4][0] = 0.309;
+        as[4][1] = 0.951;
+        as[5][0] = 0.309;
+        as[5][1] = -0.951;
         return as;
     }
     else
@@ -327,7 +350,7 @@ int main(int argc, char *argv[])
             {
                 it[ix][jx]++;
                 fun_val(exponent, &re, &im, &f_re, &f_im, &t1, &t2, &t3, &t4);
-                derivative(exponent, &re, &im, &d_re, &d_im);
+                derivative(exponent, &re, &im, &d_re, &d_im, &t3, &t4);
                 div_im(&f_re, &f_im, &d_re, &d_im, &t1, &t2);
                 re = re - t1;
                 im = im - t2;
