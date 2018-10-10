@@ -99,7 +99,7 @@ double** precomputed_roots(int d)
     if(d == 5)
     {
         double ** as = (double**) malloc(sizeof(double*) * 6);
-            for ( size_t ix = 0; ix < 4; ++ix )
+            for ( size_t ix = 0; ix < 6; ++ix )
                 as[ix] = (double*) malloc(sizeof(double) * 2);
         as[0][0] = 0;
         as[0][1] = 0;
