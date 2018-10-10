@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
     }
 
     //-----------------------------------------color lookup table:
-    int ** color_table = (int**) malloc(sizeof(int) * NUM_COLORS);
+    int ** color_table = (int**) malloc(sizeof(int*) * NUM_COLORS);
     for ( size_t ix = 0; ix < NUM_COLORS; ++ix )
         color_table[ix] = (int*) malloc(sizeof(int) * 3);
 
@@ -256,34 +256,54 @@ int main(int argc, char *argv[])
 
     FILE * pFile;
     pFile = fopen(filename_attractors, "w");
-
+    printf("FIRST FILE:\n");
     //fprintf(pFile, "P3\n%ld %ld\n255\n", param_l, param_l);
     fwrite(&header, sizeof(char), strlen(header), pFile);
 
     for ( int ix=0; ix < param_l; ++ix ) {
         char pixels[15 * param_l + 1];
+        char* p = pixels;
         for ( int jx=0; jx < param_l; ++jx ){
-            int r = color_table[(int)as[ix][jx]][0]; //some kind of processing
-            int g = color_table[(int)as[ix][jx]][1];
-            int b = color_table[(int)as[ix][jx]][2];
+            int r = color_table[as[ix][jx]][0]; //some kind of processing
+            int g = color_table[as[ix][jx]][1];
+            int b = color_table[as[ix][jx]][2];
             char rc[4], gc[4], bc[4];
+            int len;
             sprintf(rc, "%d", r);
+            len = strlen(rc);
+            for(int j = 0; j<len; j++)
+            {
+                *(p) = rc[j];
+                p++;
+            }
+            *(p) = ' ';
+            p++;
             sprintf(gc, "%d", g);
+            len = strlen(gc);
+            for(int j = 0; j<len; j++)
+            {
+                *(p) = rc[j];
+                p++;
+            }
+            *(p) = ' ';
+            p++;
             sprintf(bc, "%d", b);
-            strcat(pixels, rc);
-            strcat(pixels, " ");
-            strcat(pixels, gc);
-            strcat(pixels, " ");
-            strcat(pixels, bc);
-            strcat(pixels, " ");
+            len = strlen(bc);
+            for(int j = 0; j<len; j++)
+            {
+                *(p) = rc[j];
+                p++;
+            }
+            *(p) = ' ';
+            p++;
         }
-        strcat(pixels, "\n");
+        *(p) = '\n';
+        *(p+1) = '\0';
         fwrite(&pixels, sizeof(char), strlen(pixels), pFile);
-        pixels[0] = '\0';
     }
 
     fclose (pFile);
-
+    printf("SECOND FILE:\n");
     pFile = fopen(filename_convergence, "w");
 
     //fprintf(pFile, "P3\n%ld %ld\n255\n", param_l, param_l);
@@ -291,20 +311,26 @@ int main(int argc, char *argv[])
 
     for ( int ix=0; ix < param_l; ++ix ) {
         char pixels[15 * param_l + 1];
+        char* p = pixels;
         for ( int jx=0; jx < param_l; ++jx ){
             int v = 5*it[ix][jx]; //5 * max iteration (50)
             char grey[4];
             sprintf(grey, "%d", v);
-            strcat(pixels, grey);
-            strcat(pixels, " ");
-            strcat(pixels, grey);
-            strcat(pixels, " ");
-            strcat(pixels, grey);
-            strcat(pixels, " ");
+            int len = strlen(grey);
+            for(int i = 0; i<3; i++)
+            {
+                for(int j = 0; j<len; j++)
+                {
+                    *(p) = grey[j];
+                    p++;
+                }
+                *(p) = ' ';
+                p++;
+            }
         }
-        strcat(pixels, "\n");
+        *(p) = '\n';
+        *(p+1) = '\0';
         fwrite(&pixels, sizeof(char), strlen(pixels), pFile);
-        pixels[0] = '\0';
     }
 
     free(as);
