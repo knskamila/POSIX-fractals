@@ -6,6 +6,8 @@
 #define THRESH 0.001
 #define NUM_COLORS 10
 #define NUM_ROOTS 4 //for testing
+#define PIXEL_LEN 12
+#define COLOR_DEPTH 51
 
 void mul_im(double* a_re, double* a_im, double* b_re, double* b_im, double* c_re, double* c_im)
 {
@@ -35,6 +37,13 @@ void derivative(int d, double* re, double* im, double* d_re, double* d_im)
         *d_re = *d_re * 3;
         *d_im = *d_im * 3;
     }
+
+    else if(d == 5) //5 x^4
+    {
+        mul_im(re, im, re, im, d_re, d_im); //not finished
+        *d_re = *d_re * 3;
+        *d_im = *d_im * 3;
+    }
 }
 
 void fun_val(int d, double* re, double* im, double* f_re, double* f_im, double* t1_re, double* t1_im, double* t2_re, double* t2_im)
@@ -46,6 +55,18 @@ void fun_val(int d, double* re, double* im, double* f_re, double* f_im, double* 
         *f_im = *im;
         mul_im(re, im, re, im, t1_re, t1_im);
         mul_im(t1_re, t1_im, f_re, f_im, t2_re, t2_im);
+        *f_re = *t2_re - 1;
+        *f_im = *t2_im;
+    }
+
+    if(d == 5) //x^5 - 1
+    {
+        *f_re = *re;
+        *f_im = *im;
+        mul_im(re, im, re, im, t1_re, t1_im);
+        mul_im(t1_re, t1_im, t1_re, t1_im, t1_re, t1_im);
+        mul_im(t1_re, t1_im, f_re, f_im, t2_re, t2_im);
+
         *f_re = *t2_re - 1;
         *f_im = *t2_im;
     }
@@ -89,7 +110,7 @@ void* thread_placeholder(void)
 
 int main(int argc, char *argv[])
 {
-    long p_t, p_l;
+    int param_t, param_l;
     char *endptr;
 
     if(argc != 4)
@@ -101,14 +122,12 @@ int main(int argc, char *argv[])
     for(int i=0; i<argc; i++)
     {
         if (argv[i][0] == '-' && argv[1][1] != '\0') {
-            if(argv[i][1] == 't') p_t = strtol(&argv[i][2], &endptr, 10);
-            if(argv[i][1] == 'l') p_l = strtol(&argv[i][2], &endptr, 10);
+            if(argv[i][1] == 't') param_t = atoi(&argv[i][2]);
+            if(argv[i][1] == 'l') param_l = atoi(&argv[i][2]);
         }
     }
 
-    long const param_t = p_t;
-    long const param_l = p_l;
-    long const exponent = strtol(argv[argc-1], &endptr, 10);
+    int exponent = atoi(argv[argc-1]);
 
     if(param_t > 1)
     {
@@ -209,6 +228,89 @@ int main(int argc, char *argv[])
     color_table[9][1] = 255;
     color_table[9][2] = 150;
 
+    //-----------------------------------------color lookup table:
+    char ** char_lookup_table = (char**) malloc(sizeof(char*) * NUM_COLORS);
+    for ( size_t ix = 0; ix < NUM_COLORS; ++ix )
+        char_lookup_table[ix] = (char*) malloc(sizeof(char) * PIXEL_LEN);
+
+    char_lookup_table[0] = "130 020 130 ";
+
+    char_lookup_table[1] = "135 250 250 ";
+
+    char_lookup_table[2] = "135 250 150 ";
+
+    char_lookup_table[3] = "200 200 250 ";
+
+    char_lookup_table[4] = "130 000 130 ";
+
+    char_lookup_table[5] = "100 000 050 ";
+
+    char_lookup_table[6] = "180 000 090 ";
+
+    char_lookup_table[7] = "255 165 000 ";
+
+    char_lookup_table[8] = "220 225 000 ";
+
+    char_lookup_table[9] = "100 255 150 ";
+
+    //-----------------------------------------silly grey lookup table:
+    char ** grey_lookup = (char**) malloc(sizeof(char*) * COLOR_DEPTH);
+    for ( size_t ix = 0; ix < COLOR_DEPTH; ++ix )
+        grey_lookup[ix] = (char*) malloc(sizeof(char) * PIXEL_LEN);
+
+    grey_lookup[0] = "000 000 000 ";
+    grey_lookup[1] = "005 005 005 ";
+    grey_lookup[2] = "010 010 010 ";
+    grey_lookup[3] = "015 015 015 ";
+    grey_lookup[4] = "020 020 020 ";
+    grey_lookup[5] = "025 025 025 ";
+    grey_lookup[6] = "030 030 030 ";
+    grey_lookup[7] = "035 035 035 ";
+    grey_lookup[8] = "040 040 040 ";
+    grey_lookup[9] = "045 045 045 ";
+    grey_lookup[10] = "050 050 050 ";
+    grey_lookup[11] = "055 055 055 ";
+    grey_lookup[12] = "060 060 060 ";
+    grey_lookup[13] = "065 065 065 ";
+    grey_lookup[14] = "070 070 070 ";
+    grey_lookup[15] = "075 075 075 ";
+    grey_lookup[16] = "080 080 080 ";
+    grey_lookup[17] = "085 085 085 ";
+    grey_lookup[18] = "090 090 090 ";
+    grey_lookup[19] = "095 095 095 ";
+    grey_lookup[20] = "100 100 100 ";
+    grey_lookup[21] = "105 105 105 ";
+    grey_lookup[22] = "110 110 110 ";
+    grey_lookup[23] = "115 115 115 ";
+    grey_lookup[24] = "120 120 120 ";
+    grey_lookup[25] = "125 125 125 ";
+    grey_lookup[26] = "130 130 130 ";
+    grey_lookup[27] = "135 135 135 ";
+    grey_lookup[28] = "140 140 140 ";
+    grey_lookup[29] = "145 145 145 ";
+    grey_lookup[30] = "150 150 150 ";
+    grey_lookup[31] = "155 155 155 ";
+    grey_lookup[32] = "160 160 160 ";
+    grey_lookup[33] = "165 165 165 ";
+    grey_lookup[34] = "170 170 170 ";
+    grey_lookup[35] = "175 175 175 ";
+    grey_lookup[36] = "180 180 180 ";
+    grey_lookup[37] = "185 185 185 ";
+    grey_lookup[38] = "195 190 190 ";
+    grey_lookup[39] = "200 200 200 ";
+    grey_lookup[40] = "210 210 210 ";
+    grey_lookup[41] = "215 215 215 ";
+    grey_lookup[42] = "225 225 225 ";
+    grey_lookup[43] = "230 230 230 ";
+    grey_lookup[44] = "235 235 235 ";
+    grey_lookup[45] = "240 240 240 ";
+    grey_lookup[46] = "240 240 240 ";
+    grey_lookup[47] = "240 240 240 ";
+    grey_lookup[48] = "245 245 245 ";
+    grey_lookup[49] = "250 250 250 ";
+    grey_lookup[50] = "250 250 250 ";
+    grey_lookup[51] = "255 255 255 ";
+
 
     //-----------------------------------------COMPUTATION 1:
     for ( int ix=0; ix < param_l; ++ix ) {
@@ -264,38 +366,12 @@ int main(int argc, char *argv[])
         char pixels[15 * param_l + 1];
         char* p = pixels;
         for ( int jx=0; jx < param_l; ++jx ){
-            int r = color_table[as[ix][jx]][0]; //some kind of processing
-            int g = color_table[as[ix][jx]][1];
-            int b = color_table[as[ix][jx]][2];
-            char rc[4], gc[4], bc[4];
-            int len;
-            sprintf(rc, "%d", r);
-            len = strlen(rc);
-            for(int j = 0; j<len; j++)
+            char* color = char_lookup_table[as[ix][jx]];
+            for(int j = 0; j<PIXEL_LEN; j++)
             {
-                *(p) = rc[j];
+                *(p) = color[j];
                 p++;
             }
-            *(p) = ' ';
-            p++;
-            sprintf(gc, "%d", g);
-            len = strlen(gc);
-            for(int j = 0; j<len; j++)
-            {
-                *(p) = rc[j];
-                p++;
-            }
-            *(p) = ' ';
-            p++;
-            sprintf(bc, "%d", b);
-            len = strlen(bc);
-            for(int j = 0; j<len; j++)
-            {
-                *(p) = rc[j];
-                p++;
-            }
-            *(p) = ' ';
-            p++;
         }
         *(p) = '\n';
         *(p+1) = '\0';
@@ -313,18 +389,11 @@ int main(int argc, char *argv[])
         char pixels[15 * param_l + 1];
         char* p = pixels;
         for ( int jx=0; jx < param_l; ++jx ){
-            int v = 5*it[ix][jx]; //5 * max iteration (50)
-            char grey[4];
-            sprintf(grey, "%d", v);
-            int len = strlen(grey);
-            for(int i = 0; i<3; i++)
+            int v = it[ix][jx]; //0-255
+            char* grey = grey_lookup[v];
+            for(int i = 0; i<PIXEL_LEN; i++)
             {
-                for(int j = 0; j<len; j++)
-                {
-                    *(p) = grey[j];
-                    p++;
-                }
-                *(p) = ' ';
+                *(p) = grey[i];
                 p++;
             }
         }
