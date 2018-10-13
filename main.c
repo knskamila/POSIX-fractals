@@ -9,6 +9,27 @@
 #define PIXEL_LEN 12
 #define COLOR_DEPTH 51
 
+void power_im(double * a_re, double * a_im, double * t_re, double * t_im,, double * n)
+{
+    if (*n == 0)
+    {
+        * a_re = 1;
+        * a_im = 0;
+    }
+    else if (*n % 2 == 0) 
+    {
+        power_im(a_re, a_im, n=*n / 2);
+        *a_re = *a_re * *a_re - *a_im * *a_im;
+        *a_im = *a_re * *a_im + *a_im * *a_re;
+    } 
+    else
+    {   
+        power_im(a_re, a_im, *n-1);
+        *a_re = *a_re * *t_re - *a_im * *t_im;
+        *a_im = *a_re * *t_im + *a_im * *t_re;
+    } 
+}
+
 void mul_im(double* a_re, double* a_im, double* b_re, double* b_im, double* c_re, double* c_im)
 {
     *c_re = *a_re * *b_re - *a_im * *b_im;
