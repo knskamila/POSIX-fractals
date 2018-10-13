@@ -9,25 +9,30 @@
 #define PIXEL_LEN 12
 #define COLOR_DEPTH 51
 
-void power_im(double * a_re, double * a_im, double * t_re, double * t_im,, double * n)
+void power_im(double * a_re, double * a_im, double * t_re, double * t_im, int  n)
 {
-    if (*n == 0)
+    double temp;
+
+    if (n == 0)
     {
         * a_re = 1;
         * a_im = 0;
     }
-    else if (*n % 2 == 0) 
+    else if (n % 2 == 0)
     {
-        power_im(a_re, a_im, n=*n / 2);
-        *a_re = *a_re * *a_re - *a_im * *a_im;
+
+        power_im(a_re, a_im, t_re, t_im, n / 2);
+        temp = *a_re * *a_re - *a_im * *a_im;
         *a_im = *a_re * *a_im + *a_im * *a_re;
-    } 
+        *a_re = temp;
+    }
     else
-    {   
-        power_im(a_re, a_im, *n-1);
-        *a_re = *a_re * *t_re - *a_im * *t_im;
+    {
+        power_im(a_re, a_im, t_re, t_im, n-1);
+        temp = *a_re * *t_re - *a_im * *t_im;
         *a_im = *a_re * *t_im + *a_im * *t_re;
-    } 
+        *a_re = temp;
+    }
 }
 
 void mul_im(double* a_re, double* a_im, double* b_re, double* b_im, double* c_re, double* c_im)
@@ -69,9 +74,15 @@ void derivative(int d, double* re, double* im, double* d_re, double* d_im, doubl
     }
 }
 
-void fun_val(int d, double* re, double* im, double* f_re, double* f_im, double* t1_re, double* t1_im, double* t2_re, double* t2_im)
+
+
+/*void fun_val(int d, double* re, double* im, double* f_re, double* f_im, double* t1_re, double* t1_im, double* t2_re, double* t2_im)
 {
     // it has several arguments, because the values have to be stored somewhere on the way, could be improved
+
+
+
+
     if(d == 3) //x^3 - 1
     {
         *f_re = *re;
@@ -93,7 +104,8 @@ void fun_val(int d, double* re, double* im, double* f_re, double* f_im, double* 
         *f_re = *t1_re - 1;
         *f_im = *t1_im;
     }
-}
+
+}*/
 
 double abs_val2(double* re, double* im, double* c_re, double* c_im)
 {
@@ -357,6 +369,9 @@ int main(int argc, char *argv[])
 
 
     //-----------------------------------------COMPUTATION 1:
+    double c_1 = 1 - 1 / (double)exponent;
+    double c_2 = 1 /(double)exponent;
+    int c_3 = exponent - 1;
     for ( int ix=0; ix < param_l; ++ix ) {
         for ( int jx=0; jx < param_l; ++jx ){
             double re = 4.0*(ix - param_l/2.0)/(double)param_l;
@@ -370,11 +385,24 @@ int main(int argc, char *argv[])
             while(!converged)
             {
                 it[ix][jx]++;
+                d_re = c_1 * re;
+                d_im = c_1 * im;
+                t1 = re;
+                t2 = im;
+
+                power_im(&re, &im, &t1, &t2, c_3);
+                t3 = (re * re + im * im) * c_2;
+                re =  re / t3 ;
+                im = -im /t3;
+                re = re + d_re;
+                im = im + d_im;
+                /*
                 fun_val(exponent, &re, &im, &f_re, &f_im, &t1, &t2, &t3, &t4);
                 derivative(exponent, &re, &im, &d_re, &d_im, &t3, &t4);
                 div_im(&f_re, &f_im, &d_re, &d_im, &t1, &t2);
                 re = re - t1;
                 im = im - t2;
+                */
                 if(re*re > 1000 || im*im > 1000){
                     converged = 1;
                     root = exponent;
