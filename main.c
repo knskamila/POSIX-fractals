@@ -103,7 +103,7 @@ void* compute_runner(void* arg)
                 re = re + d_re;
                 im = im + d_im;
 
-                if( re*re > 10000000000 || im*im > 10000000000 || t3 < 0.00000000000001 ){
+                if( abs(re) > 10000000000 || abs(im) > 10000000000 || t3 < 0.00000000000001 ){
                     converged = 1;
                     root = 0;
                     break;
