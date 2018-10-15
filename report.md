@@ -19,7 +19,7 @@ The condition is simply that there must be three arguments given. Arguments star
 ???
 
 ## Checking the convergence and divergence conditions
-The points are assumed to have converged if their absolute distance to one of the roots is smaller than the threshold of 10^-3. Furthermore, the center of the coordinate space is treated as a root, since Newton method would never reach convergence for points close to it. Similarly, the iteration does not continue of any part of the number reaches 10^10. 
+The points are assumed to have converged if their absolute distance to one of the roots is smaller than the threshold of 10^-3. Furthermore, the center of the coordinate space is treated as a root, since Newton method would never reach convergence for points close to it. Similarly, the iteration does not continue if any part of the number reaches 10^10. 
 These conditions are checked in order every iteration, before doing the computations.
 ```
 if( re*re > 10000000000 || im*im > 10000000000 || t3 < 0.00000000000001 ){
