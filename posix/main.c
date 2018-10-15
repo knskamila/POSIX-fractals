@@ -13,8 +13,8 @@
 #define M_PI 3.14159265358979323846
 
 struct compute_runner_struct {
-	int ** as;
-	int ** it;
+	short int ** as;
+	short int ** it;
 	double ** roots_list;
 	int exponent;
 	int param_l;
@@ -62,7 +62,7 @@ void precomputed_roots(int d, double ** roots_list)
 {
     roots_list[0][0] = 0;
     roots_list[0][1] = 0;
-    for(size_t ix=0; ix < d; ++ix)
+    for(size_t ix=1; ix <= d; ++ix)
     {
         roots_list[ix][0] = cos(2* M_PI * ix / (double)d);
         roots_list[ix][1] = sin(2 * M_PI * ix / (double)d);
@@ -76,7 +76,7 @@ void compute_runner(void* arg)
 
     double re, im;
     double d_re, d_im;
-    double t1, t2, t3;
+    double t1, t2, t3, t4;
     int converged;
     int root;
     double c_1 = 1 - 1 / (double)arg_struct->exponent;
@@ -99,23 +99,20 @@ void compute_runner(void* arg)
                 t2 = im;
 
                 power_im(&re, &im, &t1, &t2, c_3);
-                t3 = (re * re + im * im) * c_2;
-                re =  re / t3 ;
-                im = -im /t3;
+                t3 = (re * re + im * im);
+                t4 = t3 * c_2;
+                re =  re / t4 ;
+                im = -im /t4;
                 re = re + d_re;
                 im = im + d_im;
 
-                if( re*re > 1000000 || im*im > 1000000 || t3 < 0.0000001 ){
+                if( re*re > 1000000000000 || im*im > 1000000000000 || t3 < 0.0000000000000001 ){
                     converged = 1;
                     root = 0;
                     break;
                 }
-                if(arg_struct->it[ix][jx] > 50){
-                    converged = 1;
-                    root = 0;
-                    break;
-                }
-                for(int i = 0; i < c_2; i++)
+
+                for(int i = 0; i <= c_2; i++)
                 {
                     double abs = abs_val2(&re, &im, &arg_struct->roots_list[i][0], &arg_struct->roots_list[i][1]);
                     if(abs < THRESH*THRESH)
@@ -158,9 +155,9 @@ int main(int argc, char *argv[])
     char string_t[5];
     char char_exponent[1];
     char header[30] = "P3\n";
-    sprintf(string_l, "%ld", param_l);
-    sprintf(string_t, "%ld", param_t);
-    sprintf(char_exponent, "%ld", exponent);
+    sprintf(string_l, "%d", param_l);
+    sprintf(string_t, "%d", param_t);
+    sprintf(char_exponent, "%d", exponent);
 
     char filename_attractors[30] = "newton_attractors_x";
     char filename_convergence[30] = "newton_convergence_x";
@@ -173,26 +170,26 @@ int main(int argc, char *argv[])
     strcat(header, string_l);
     strcat(header, "\n255\n");
 
-    printf("t = %ld, l = %ld, exponent is %ld\n", param_t, param_l, exponent);
+    printf("t = %d, l = %d, exponent is %d\n", param_t, param_l, exponent);
     printf("filename1: %s\n", filename_attractors);
     printf("filename2: %s\n", filename_convergence);
 
-    double ** roots_list = (double**) malloc(sizeof(double*) * exponent*2); //array of roots
-    for ( size_t ix = 0; ix < exponent; ++ix )
+    double ** roots_list = (double**) malloc(sizeof(double*) * (exponent+1)*2); //array of roots
+    for ( size_t ix = 0; ix < exponent+1; ++ix )
         roots_list[ix] = (double*) malloc(sizeof(double) * 2);
 
     precomputed_roots(exponent, roots_list);
 
-    int ** as = (int**) malloc(sizeof(int*) * param_l); //array of roots
-    int * as_p = (int*) malloc(sizeof(int) * param_l*param_l);
+    short int ** as = (short int**) malloc(sizeof(short int*) * param_l); //array of roots
+    short int * as_p = (short int*) malloc(sizeof(short int) * param_l*param_l);
     for ( size_t ix = 0, jx = 0; ix < param_l; ++ix, jx += param_l )
         as[ix] = as_p + jx;
-    printf("Size of as: %d\n", sizeof(int)*param_l*param_l/1000000000);
-    int ** it = (int**) malloc(sizeof(int*) * param_l); //array of roots
-    int * it_p = (int*) malloc(sizeof(int) * param_l*param_l);
+
+    short int ** it = (short int**) malloc(sizeof(short int*) * param_l); //array of roots
+    short int * it_p = (short int*) malloc(sizeof(short int) * param_l*param_l);
     for ( size_t ix = 0, jx = 0; ix < param_l; ++ix, jx += param_l )
         it[ix] = it_p + jx;
-    printf("Allocating arrays\n");
+
     //-----------------------------------------initialization:
     for ( int ix=0; ix < param_l; ++ix ) {
         for ( int jx=0; jx < param_l; jx+=2 ){
@@ -200,7 +197,6 @@ int main(int argc, char *argv[])
             it[ix][jx+1] = 0; //should it?
         }
     }
-    printf("Allocating arrays\n");
     //-----------------------------------------color lookup table:
     int ** color_table = (int**) malloc(sizeof(int*) * NUM_COLORS);
     for ( size_t ix = 0; ix < NUM_COLORS; ++ix )
@@ -396,7 +392,7 @@ int main(int argc, char *argv[])
         char* p = pixels;
         for ( int jx=0; jx < param_l; ++jx ){
             int v = it[ix][jx]; //0-255
-            char* grey = grey_lookup[v];
+            char* grey = grey_lookup[v<50? v : 50];
             for(int i = 0; i<PIXEL_LEN; i++)
             {
                 *(p) = grey[i];
