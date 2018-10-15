@@ -62,8 +62,23 @@ while(!converged)
 }
 ```
 ## Writing to file
-There are two separate loops which read values from `as` and `it` matrix, storing the root id and iteration number respectively, transforming them to an RGB color. All lines in the `.ppm` file are saved using `fwrite` function. To further 
+There are two separate loops which read values from `as` and `it` matrix, storing the root id and iteration number respectively, transforming them to an RGB color representation. All lines in the `.ppm` file are saved using `fwrite` function. To avoid slow performance, the use of string functions such as `strcat` was reduced to minimum.
+Each line of pixels represented by R, G, B values is created by first allocating memory for a char array, then a pointer is used to iterate through memory addresses:
+```
+char pixels[PIXEL_LEN * param_l + 1];
+        char* p = pixels;
+        for ( size_t jx=0; jx < param_l; ++jx ){
 
+            char* color = char_lookup_table[as[ix][jx]];
+
+            for(size_t j = 0; j<PIXEL_LEN; j++)
+            {
+                *(p) = color[j];
+                p++;
+            }
+}
+```
+The `char_lookup_table` visible here is a predefined array of char values representing all the colors the roots can be visualized by. In the case of iteration number, the representation was limited to iterations in a [0, 51] range, where 51 iterations are represented by pure white. A corresponding lookup table is also predefined.
 
 ## Conclusions
 
