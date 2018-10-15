@@ -2,139 +2,135 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <math.h>
+#include <pthread.h>
 
 #define THRESH 0.001
 #define NUM_COLORS 10
 #define NUM_ROOTS 4 //for testing
 #define PIXEL_LEN 12
 #define COLOR_DEPTH 51
+#define M_PI 3.14159265358979323846
 
-void mul_im(double* a_re, double* a_im, double* b_re, double* b_im, double* c_re, double* c_im)
-{
-    *c_re = *a_re * *b_re - *a_im * *b_im;
-    *c_im = *a_re * *b_im + *a_im * *b_re;
-}
+struct compute_runner_struct {
+	short int ** as;
+	short int ** it;
+	double ** roots_list;
+	int exponent;
+	int param_l;
+	int ix_start;
+	int ix_stop;
+	int ix_step;
+};
 
-void div_im(double* a_re, double* a_im, double* b_re, double* b_im, double* c_re, double* c_im)
+void power_im(double * a_re, double * a_im, double * t_re, double * t_im, int  n)
 {
-    if((*b_re * *b_re + *b_im * *b_im) < THRESH)
+    double temp;
+
+    if (n == 0)
     {
-        *c_re = 1000;
-        *c_im = 1000;
+        * a_re = 1;
+        * a_im = 0;
+    }
+    else if (n % 2 == 0)
+    {
+
+        power_im(a_re, a_im, t_re, t_im, n / 2);
+        temp = *a_re * *a_re - *a_im * *a_im;
+        *a_im = *a_re * *a_im + *a_im * *a_re;
+        *a_re = temp;
     }
     else
     {
-        *c_re = (*a_re * *b_re + *a_im * *b_im) / (*b_re * *b_re + *b_im * *b_im);
-        *c_im = (*b_re * *a_im - *a_re * *b_im) / (*b_re * *b_re + *b_im * *b_im);
+        power_im(a_re, a_im, t_re, t_im, n-1);
+        temp = *a_re * *t_re - *a_im * *t_im;
+        *a_im = *a_re * *t_im + *a_im * *t_re;
+        *a_re = temp;
     }
 }
 
-void derivative(int d, double* re, double* im, double* d_re, double* d_im, double * t_re, double * t_im)
-{
-    if(d == 3) //3 x^2
-    {
-        mul_im(re, im, re, im, d_re, d_im);
-        *d_re = *d_re * 3;
-        *d_im = *d_im * 3;
-    }
 
-    else if(d == 5) //5 x^4
-    {
-        mul_im(re, im, re, im, d_re, d_im);
-        mul_im(d_re, d_im, re, im, t_re, t_im);
-        mul_im(t_re, t_im, re, im, d_re, d_im);
-        *d_re = *d_re * 5;
-        *d_im = *d_im * 5;
-    }
-}
 
-void fun_val(int d, double* re, double* im, double* f_re, double* f_im, double* t1_re, double* t1_im, double* t2_re, double* t2_im)
-{
-    // it has several arguments, because the values have to be stored somewhere on the way, could be improved
-    if(d == 3) //x^3 - 1
-    {
-        *f_re = *re;
-        *f_im = *im;
-        mul_im(re, im, re, im, t1_re, t1_im);
-        mul_im(t1_re, t1_im, f_re, f_im, t2_re, t2_im);
-        *f_re = *t2_re - 1;
-        *f_im = *t2_im;
-    }
 
-    if(d == 5) //x^5 - 1
-    {
-        *f_re = *re;
-        *f_im = *im;
-        mul_im(re, im, re, im, t1_re, t1_im);
-        mul_im(t1_re, t1_im, t1_re, t1_im, t2_re, t2_im);
-        mul_im(t2_re, t2_im, f_re, f_im, t1_re, t1_im);
-
-        *f_re = *t1_re - 1;
-        *f_im = *t1_im;
-    }
-}
 
 double abs_val2(double* re, double* im, double* c_re, double* c_im)
 {
     return (*re - *c_re)*(*re - *c_re) + (*im - *c_im)*(*im - *c_im);
 }
 
-double** precomputed_roots(int d)
+void precomputed_roots(int d, double ** roots_list)
 {
-    if(d == 3)
+    roots_list[0][0] = 0;
+    roots_list[0][1] = 0;
+    for(size_t ix=1; ix <= d; ++ix)
     {
-        double ** as = (double**) malloc(sizeof(double*) * 4);
-            for ( size_t ix = 0; ix < 4; ++ix )
-                as[ix] = (double*) malloc(sizeof(double) * 2);
-        as[0][0] = 0;
-        as[0][1] = 0;
-        as[1][0] = 1;
-        as[1][1] = 0;
-        as[2][0] = -0.5;
-        as[2][1] = 0.866;
-        as[3][0] = -0.5;
-        as[3][1] = -0.866;
-        return as;
-    }
-    if(d == 5)
-    {
-        double ** as = (double**) malloc(sizeof(double*) * 6);
-            for ( size_t ix = 0; ix < 6; ++ix )
-                as[ix] = (double*) malloc(sizeof(double) * 2);
-        as[0][0] = 0;
-        as[0][1] = 0;
-        as[1][0] = 1;
-        as[1][1] = 0;
-
-        as[2][0] = -0.809;
-        as[2][1] = 0.58779;
-        as[3][0] = -0.809;
-        as[3][1] = -0.58779;
-
-        as[4][0] = 0.309;
-        as[4][1] = 0.951;
-        as[5][0] = 0.309;
-        as[5][1] = -0.951;
-        return as;
-    }
-    else
-    {
-        double ** as = (double**) malloc(sizeof(double*) * 3);
-            for ( size_t ix = 0; ix < 3; ++ix )
-                as[ix] = (double*) malloc(sizeof(double) * 2);
-        return as;
+        roots_list[ix][0] = cos(2* M_PI * ix / (double)d);
+        roots_list[ix][1] = sin(2 * M_PI * ix / (double)d);
     }
 }
 
-void* thread_placeholder(void)
+void compute_runner(void* arg)
 {
-    //
+    struct compute_runner_struct *arg_struct =
+			(struct compute_runner_struct*) arg;
+
+    double re, im;
+    double d_re, d_im;
+    double t1, t2, t3, t4;
+    int converged;
+    int root;
+    double c_1 = 1 - 1 / (double)arg_struct->exponent;
+    double c_2 = arg_struct->exponent;
+    int c_3 = arg_struct->exponent - 1;
+    for ( int ix=arg_struct->ix_start; ix <= arg_struct->ix_stop; ix += arg_struct->ix_step ) {
+        for ( int jx=0; jx < arg_struct->param_l; ++jx ){
+            re = 4.0*(ix - arg_struct->param_l/2.0)/(double)arg_struct->param_l;
+            im = 4.0*(jx - arg_struct->param_l/2.0)/(double)arg_struct->param_l;
+
+            converged = 0;
+            root = 0;
+
+            while(!converged)
+            {
+                arg_struct->it[ix][jx]++;
+                d_re = c_1 * re;
+                d_im = c_1 * im;
+                t1 = re;
+                t2 = im;
+
+                power_im(&re, &im, &t1, &t2, c_3);
+                t3 = (re * re + im * im);
+                t4 = t3 * c_2;
+                re =  re / t4 ;
+                im = -im /t4;
+                re = re + d_re;
+                im = im + d_im;
+
+                if( re*re > 1000000000000 || im*im > 1000000000000 || t3 < 0.0000000000000001 ){
+                    converged = 1;
+                    root = 0;
+                    break;
+                }
+
+                for(int i = 0; i <= c_2; i++)
+                {
+                    double abs = abs_val2(&re, &im, &arg_struct->roots_list[i][0], &arg_struct->roots_list[i][1]);
+                    if(abs < THRESH*THRESH)
+                    {
+                        converged = 1;
+                        root = i;
+                        break;
+                    }
+                }
+            }
+            arg_struct->as[ix][jx] = root;
+        }
+    }
 }
 
 int main(int argc, char *argv[])
 {
     int param_t, param_l;
-    char *endptr;
 
     if(argc != 4)
     {
@@ -152,26 +148,16 @@ int main(int argc, char *argv[])
 
     int exponent = atoi(argv[argc-1]);
 
-    if(param_t > 1)
-    {
-        pthread_t thread_id[param_t];
-        for(int i=0; i<param_t; ++i)
-        {
-            pthread_create(&thread_id[i], NULL, &thread_placeholder, NULL);
-        }
 
-        for(int i=0; i<param_t; ++i)
-            pthread_join(thread_id[i],NULL);
-    }
 
     //storing parameter values as string to write later
     char string_l[10];
     char string_t[5];
     char char_exponent[1];
     char header[30] = "P3\n";
-    sprintf(string_l, "%ld", param_l);
-    sprintf(string_t, "%ld", param_t);
-    sprintf(char_exponent, "%ld", exponent);
+    sprintf(string_l, "%d", param_l);
+    sprintf(string_t, "%d", param_t);
+    sprintf(char_exponent, "%d", exponent);
 
     char filename_attractors[30] = "newton_attractors_x";
     char filename_convergence[30] = "newton_convergence_x";
@@ -184,19 +170,25 @@ int main(int argc, char *argv[])
     strcat(header, string_l);
     strcat(header, "\n255\n");
 
-    printf("t = %ld, l = %ld, exponent is %ld\n", param_t, param_l, exponent);
+    printf("t = %d, l = %d, exponent is %d\n", param_t, param_l, exponent);
     printf("filename1: %s\n", filename_attractors);
     printf("filename2: %s\n", filename_convergence);
 
-    double** roots_list = precomputed_roots(exponent);
+    double ** roots_list = (double**) malloc(sizeof(double*) * (exponent+1)*2); //array of roots
+    for ( size_t ix = 0; ix < exponent+1; ++ix )
+        roots_list[ix] = (double*) malloc(sizeof(double) * 2);
 
-    int ** as = (int**) malloc(sizeof(int*) * param_l); //array of roots
-    for ( size_t ix = 0; ix < param_l; ++ix )
-        as[ix] = (int*) malloc(sizeof(int) * param_l);
+    precomputed_roots(exponent, roots_list);
 
-    int ** it = (int**) malloc(sizeof(int*) * param_l); //array of iterations
-    for ( size_t ix = 0; ix < param_l; ++ix )
-        it[ix] = (int*) malloc(sizeof(int) * param_l);
+    short int ** as = (short int**) malloc(sizeof(short int*) * param_l); //array of roots
+    short int * as_p = (short int*) malloc(sizeof(short int) * param_l*param_l);
+    for ( size_t ix = 0, jx = 0; ix < param_l; ++ix, jx += param_l )
+        as[ix] = as_p + jx;
+
+    short int ** it = (short int**) malloc(sizeof(short int*) * param_l); //array of roots
+    short int * it_p = (short int*) malloc(sizeof(short int) * param_l*param_l);
+    for ( size_t ix = 0, jx = 0; ix < param_l; ++ix, jx += param_l )
+        it[ix] = it_p + jx;
 
     //-----------------------------------------initialization:
     for ( int ix=0; ix < param_l; ++ix ) {
@@ -205,7 +197,6 @@ int main(int argc, char *argv[])
             it[ix][jx+1] = 0; //should it?
         }
     }
-
     //-----------------------------------------color lookup table:
     int ** color_table = (int**) malloc(sizeof(int*) * NUM_COLORS);
     for ( size_t ix = 0; ix < NUM_COLORS; ++ix )
@@ -336,69 +327,57 @@ int main(int argc, char *argv[])
 
 
     //-----------------------------------------COMPUTATION 1:
-    for ( int ix=0; ix < param_l; ++ix ) {
-        for ( int jx=0; jx < param_l; ++jx ){
-            double re = 4.0*(ix - param_l/2.0)/(double)param_l;
-            double im = 4.0*(jx - param_l/2.0)/(double)param_l;
 
-            double d_re, d_im, f_re, f_im;
-            double t1, t2, t3, t4;
-            int converged = 0;
-            int root = 0;
+    struct compute_runner_struct args[param_t];
+    pthread_t thread_id[param_t];
+    for(size_t i=0; i<param_t; ++i)
+    {
+        args[i].as = as;
+        args[i].it = it;
+        args[i].roots_list = roots_list;
+        args[i].exponent = exponent;
+        args[i].param_l = param_l;
+        args[i].ix_start = i;
+        args[i].ix_step = param_t;
+        if(param_l%param_t == 0)
+            args[i].ix_stop = param_l - param_t + i;
+        else
+            args[i].ix_stop = param_l%param_t <= i ? param_l - param_l%param_t - param_t + i :  param_l - param_l%param_t + i;
 
-            while(!converged)
-            {
-                it[ix][jx]++;
-                fun_val(exponent, &re, &im, &f_re, &f_im, &t1, &t2, &t3, &t4);
-                derivative(exponent, &re, &im, &d_re, &d_im, &t3, &t4);
-                div_im(&f_re, &f_im, &d_re, &d_im, &t1, &t2);
-                re = re - t1;
-                im = im - t2;
-                if(re*re > 1000 || im*im > 1000){
-                    converged = 1;
-                    root = exponent;
-                    break;
-                }
-                if(it[ix][jx] > 50){
-                    converged = 1;
-                    root = 0;
-                    break;
-                }
-                for(int i = 0; i < NUM_ROOTS; i++)
-                {
-                    double abs = abs_val2(&re, &im, &roots_list[i][0], &roots_list[i][1]);
-                    if(abs < THRESH*THRESH)
-                    {
-                        converged = 1;
-                        root = i;
-                        break;
-                    }
-                }
-            }
-            as[ix][jx] = root;
-        }
+        /* launch thread */
+        pthread_attr_t attr;
+		pthread_attr_init(&attr);
+        pthread_create(&thread_id[i], &attr, compute_runner, &args[i]);
+
     }
 
+    for(size_t i=0; i<param_t; ++i)
+        pthread_join(thread_id[i],NULL);
+    /* Writing */
     FILE * pFile;
     pFile = fopen(filename_attractors, "w");
     printf("FIRST FILE:\n");
     //fprintf(pFile, "P3\n%ld %ld\n255\n", param_l, param_l);
     fwrite(&header, sizeof(char), strlen(header), pFile);
+    for ( size_t ix=0; ix < param_l; ++ix ) {
 
-    for ( int ix=0; ix < param_l; ++ix ) {
         char pixels[15 * param_l + 1];
         char* p = pixels;
-        for ( int jx=0; jx < param_l; ++jx ){
+        for ( size_t jx=0; jx < param_l; ++jx ){
+
             char* color = char_lookup_table[as[ix][jx]];
-            for(int j = 0; j<PIXEL_LEN; j++)
+
+            for(size_t j = 0; j<PIXEL_LEN; j++)
             {
                 *(p) = color[j];
                 p++;
             }
+
         }
         *(p) = '\n';
         *(p+1) = '\0';
         fwrite(&pixels, sizeof(char), strlen(pixels), pFile);
+
     }
 
     fclose (pFile);
@@ -413,7 +392,7 @@ int main(int argc, char *argv[])
         char* p = pixels;
         for ( int jx=0; jx < param_l; ++jx ){
             int v = it[ix][jx]; //0-255
-            char* grey = grey_lookup[v];
+            char* grey = grey_lookup[v<50? v : 50];
             for(int i = 0; i<PIXEL_LEN; i++)
             {
                 *(p) = grey[i];
@@ -424,7 +403,7 @@ int main(int argc, char *argv[])
         *(p+1) = '\0';
         fwrite(&pixels, sizeof(char), strlen(pixels), pFile);
     }
-
+    free(roots_list);
     free(as);
     free(it);
     fclose (pFile);
