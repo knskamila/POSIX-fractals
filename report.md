@@ -13,10 +13,10 @@ Similarly, there are no formulas for the value nor the derivative for a given ex
 The condition is simply that there must be three arguments given. Arguments starting with respective letters are parsed using `atoi` function.
 
 ## Synchronization of compute and write threads
-???
+Sadly, we did not succeed at implementing synchronization, which made it impossible to pass the test. Writing is then made after the calculation of all convergence points is completed.
 
 ## Data transfer between compute and write threads
-???
+Same as above.
 
 ## Checking the convergence and divergence conditions
 The points are assumed to have converged if their absolute distance to one of the roots is smaller than the threshold of 10^-3. Furthermore, the center of the coordinate space is treated as a root, since Newton method would never reach convergence for points close to it. Similarly, the iteration does not continue if any part of the number reaches 10^10. 
