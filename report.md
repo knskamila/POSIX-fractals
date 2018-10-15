@@ -82,6 +82,4 @@ The `char_lookup_table` visible here is a predefined array of char values repres
 
 ## Conclusions
 
-```
-Sample text here...
-```
+While working on the assignment we could se the impact the use of the threads can make. Furthermore, the first version of the code utilized standard string functions, which made the code for a single thread and exponent 3 run for 17 seconds. Replacing these functions by pointer operations and using a lookup table of color values as char characters reduced this time to around 1 second.
