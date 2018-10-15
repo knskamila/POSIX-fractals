@@ -63,7 +63,7 @@ while(!converged)
 ```
 ## Writing to file
 There are two separate loops which read values from `as` and `it` matrix, storing the root id and iteration number respectively, transforming them to an RGB color representation. All lines in the `.ppm` file are saved using `fwrite` function. To avoid slow performance, the use of string functions such as `strcat` was reduced to minimum.
-Each line of pixels represented by R, G, B values is created by first allocating memory for a char array, then a pointer is used to iterate through memory addresses:
+Each line of pixels represented by R, G, B values is created by first allocating memory for a char array, then a pointer is used to iterate through memory addresses, so that an entire line can be saved at once:
 ```
 char pixels[PIXEL_LEN * param_l + 1];
         char* p = pixels;
