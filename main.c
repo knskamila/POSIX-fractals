@@ -7,7 +7,6 @@
 
 #define THRESH 0.001
 #define NUM_COLORS 10
-#define NUM_ROOTS 4 //for testing
 #define PIXEL_LEN 12
 #define COLOR_DEPTH 51
 #define M_PI 3.14159265358979323846
@@ -48,8 +47,6 @@ void power_im(double * a_re, double * a_im, double * t_re, double * t_im, int  n
         *a_re = temp;
     }
 }
-
-
 
 
 
@@ -149,8 +146,6 @@ int main(int argc, char *argv[])
 
     int exponent = atoi(argv[argc-1]);
 
-
-
     //storing parameter values as string to write later
     char string_l[10];
     char string_t[5];
@@ -193,55 +188,10 @@ int main(int argc, char *argv[])
 
     //-----------------------------------------initialization:
     for ( int ix=0; ix < param_l; ++ix ) {
-        for ( int jx=0; jx < param_l; jx+=2 ){
+        for ( int jx=0; jx < param_l; ++jx ){
             it[ix][jx] = 0;
-            it[ix][jx+1] = 0; //should it?
         }
     }
-    //-----------------------------------------color lookup table:
-    int ** color_table = (int**) malloc(sizeof(int*) * NUM_COLORS);
-    for ( size_t ix = 0; ix < NUM_COLORS; ++ix )
-        color_table[ix] = (int*) malloc(sizeof(int) * 3);
-
-    color_table[0][0] = 130;
-    color_table[0][1] = 20;
-    color_table[0][2] = 130;
-
-    color_table[1][0] = 135;
-    color_table[1][1] = 250;
-    color_table[1][2] = 250;
-
-    color_table[2][0] = 135;
-    color_table[2][1] = 150;
-    color_table[2][2] = 250;
-
-    color_table[3][0] = 200;
-    color_table[3][1] = 200;
-    color_table[3][2] = 250;
-
-    color_table[4][0] = 130;
-    color_table[4][1] = 0;
-    color_table[4][2] = 130;
-
-    color_table[5][0] = 100;
-    color_table[5][1] = 0;
-    color_table[5][2] = 50;
-
-    color_table[6][0] = 180;
-    color_table[6][1] = 0;
-    color_table[6][2] = 90;
-
-    color_table[7][0] = 255;
-    color_table[7][1] = 165;
-    color_table[7][2] = 0;
-
-    color_table[8][0] = 220;
-    color_table[8][1] = 225;
-    color_table[8][2] = 0;
-
-    color_table[9][0] = 100;
-    color_table[9][1] = 255;
-    color_table[9][2] = 150;
 
     //-----------------------------------------color lookup table:
     char ** char_lookup_table = (char**) malloc(sizeof(char*) * NUM_COLORS);
@@ -358,11 +308,10 @@ int main(int argc, char *argv[])
     FILE * pFile;
     pFile = fopen(filename_attractors, "w");
     printf("FIRST FILE:\n");
-    //fprintf(pFile, "P3\n%ld %ld\n255\n", param_l, param_l);
     fwrite(&header, sizeof(char), strlen(header), pFile);
     for ( size_t ix=0; ix < param_l; ++ix ) {
 
-        char pixels[15 * param_l + 1];
+        char pixels[PIXEL_LEN * param_l + 1];
         char* p = pixels;
         for ( size_t jx=0; jx < param_l; ++jx ){
 
@@ -389,7 +338,7 @@ int main(int argc, char *argv[])
     fwrite(&header, sizeof(char), strlen(header), pFile);
 
     for ( int ix=0; ix < param_l; ++ix ) {
-        char pixels[15 * param_l + 1];
+        char pixels[PIXEL_LEN * param_l + 1];
         char* p = pixels;
         for ( int jx=0; jx < param_l; ++jx ){
             int v = it[ix][jx]; //0-255
