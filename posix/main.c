@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <math.h>
 #include <pthread.h>
+#include <time.h>
 
 #define THRESH 0.001
 #define NUM_COLORS 10
@@ -11,6 +12,9 @@
 #define PIXEL_LEN 12
 #define COLOR_DEPTH 51
 #define M_PI 3.14159265358979323846
+
+pthread_mutex_t mutex_1 = PTHREAD_MUTEX_INITIALIZER;
+char item_done[100000];
 
 struct compute_runner_struct {
 	short int ** as;
@@ -21,6 +25,19 @@ struct compute_runner_struct {
 	int ix_start;
 	int ix_stop;
 	int ix_step;
+
+};
+
+struct write_runner_struct
+{
+    short int ** as;
+    short int ** it;
+    char ** char_lookup_table;
+    char ** grey_lookup;
+    int param_l;
+    char *header;
+    char *filename_convergence;
+    char *filename_attractors;
 };
 
 void power_im(double * a_re, double * a_im, double * t_re, double * t_im, int  n)
@@ -106,13 +123,14 @@ void* compute_runner(void* arg)
                 re = re + d_re;
                 im = im + d_im;
 
+
                 if( re*re > 10000000000 || im*im > 10000000000 || t3 < 0.00000000000001 ){
                     converged = 1;
                     root = 0;
                     break;
                 }
 
-                for(int i = 0; i <= c_2; i++)
+                  for(int i = 0; i <= c_2; i++)
                 {
                     double abs = abs_val2(&re, &im, &arg_struct->roots_list[i][0], &arg_struct->roots_list[i][1]);
                     if(abs < THRESH*THRESH)
@@ -122,11 +140,93 @@ void* compute_runner(void* arg)
                         break;
                     }
                 }
+
+
             }
             arg_struct->as[ix][jx] = root;
+
+            pthread_mutex_lock(&mutex_1);
+            item_done[ix]=1;
+            pthread_mutex_unlock(&mutex_1);
+
         }
     }
-    return NULL;
+    pthread_exit(NULL);
+}
+
+void* write_runner(void* arg)
+{
+
+    struct write_runner_struct *arg_struct =(struct write_runner_struct*) arg;
+
+    char * item_done_loc = (char*)calloc(arg_struct->param_l, sizeof(char));
+        /* Writing */
+
+    FILE * pFile_c;
+    FILE * pFile_r;
+    pFile_r = fopen(arg_struct->filename_attractors, "w");
+    pFile_c = fopen(arg_struct->filename_convergence, "w");
+
+    fwrite(&arg_struct->header, sizeof(char), strlen(arg_struct->header), pFile_r);
+    fwrite(&arg_struct->header, sizeof(char), strlen(arg_struct->header), pFile_c);
+
+    for ( size_t ix = 0; ix < arg_struct->param_l; )
+    {
+        pthread_mutex_lock(&mutex_1);
+        if ( item_done[ix] != 0 )
+            memcpy(item_done_loc, item_done, arg_struct->param_l*sizeof(char));
+        pthread_mutex_unlock(&mutex_1);
+
+        if ( item_done_loc[ix] == 0 )
+        {
+            nanosleep((const struct timespec[]){{0, 1000}}, NULL);
+            continue;
+        }
+
+        for ( ; ix < arg_struct->param_l && item_done_loc[ix] != 0; ++ix )
+        {
+
+
+
+
+
+                char pixels_r[15 * arg_struct->param_l + 1];
+                char* p_r = pixels_r;
+                for ( size_t jx=0; jx < arg_struct->param_l; ++jx ){
+
+                    char* color = arg_struct->char_lookup_table[arg_struct->as[ix][jx]];
+
+                    for(size_t j = 0; j<PIXEL_LEN; j++)
+                    {
+                        *(p_r) = color[j];
+                        p_r++;
+                    }
+                }
+                *(p_r) = '\n';
+                *(p_r+1) = '\0';
+                fwrite(&pixels_r, sizeof(char), strlen(pixels_r), pFile_r);
+
+
+                char pixels_c[15 * arg_struct->param_l + 1];
+                char* p_c = pixels_c;
+                for ( int jx=0; jx < arg_struct->param_l; ++jx ){
+                    int v = arg_struct->it[ix][jx]; //0-255
+                    char* grey = arg_struct->grey_lookup[v<50? v : 50];
+                    for(int i = 0; i<PIXEL_LEN; i++)
+                    {
+                        *(p_c) = grey[i];
+                        p_c++;
+                    }
+                }
+                *(p_c) = '\n';
+                *(p_c+1) = '\0';
+                fwrite(&pixels_c, sizeof(char), strlen(pixels_c), pFile_c);
+
+      }
+    }
+    fclose (pFile_c);
+    fclose (pFile_r);
+    pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[])
@@ -191,6 +291,7 @@ int main(int argc, char *argv[])
     for ( size_t ix = 0, jx = 0; ix < param_l; ++ix, jx += param_l )
         it[ix] = it_p + jx;
 
+
     //-----------------------------------------initialization:
     for ( int ix=0; ix < param_l; ++ix ) {
         for ( int jx=0; jx < param_l; jx+=2 ){
@@ -198,50 +299,6 @@ int main(int argc, char *argv[])
             it[ix][jx+1] = 0; //should it?
         }
     }
-    //-----------------------------------------color lookup table:
-    int ** color_table = (int**) malloc(sizeof(int*) * NUM_COLORS);
-    for ( size_t ix = 0; ix < NUM_COLORS; ++ix )
-        color_table[ix] = (int*) malloc(sizeof(int) * 3);
-
-    color_table[0][0] = 130;
-    color_table[0][1] = 20;
-    color_table[0][2] = 130;
-
-    color_table[1][0] = 135;
-    color_table[1][1] = 250;
-    color_table[1][2] = 250;
-
-    color_table[2][0] = 135;
-    color_table[2][1] = 150;
-    color_table[2][2] = 250;
-
-    color_table[3][0] = 200;
-    color_table[3][1] = 200;
-    color_table[3][2] = 250;
-
-    color_table[4][0] = 130;
-    color_table[4][1] = 0;
-    color_table[4][2] = 130;
-
-    color_table[5][0] = 100;
-    color_table[5][1] = 0;
-    color_table[5][2] = 50;
-
-    color_table[6][0] = 180;
-    color_table[6][1] = 0;
-    color_table[6][2] = 90;
-
-    color_table[7][0] = 255;
-    color_table[7][1] = 165;
-    color_table[7][2] = 0;
-
-    color_table[8][0] = 220;
-    color_table[8][1] = 225;
-    color_table[8][2] = 0;
-
-    color_table[9][0] = 100;
-    color_table[9][1] = 255;
-    color_table[9][2] = 150;
 
     //-----------------------------------------color lookup table:
     char ** char_lookup_table = (char**) malloc(sizeof(char*) * NUM_COLORS);
@@ -329,83 +386,51 @@ int main(int argc, char *argv[])
 
     //-----------------------------------------COMPUTATION 1:
 
-    struct compute_runner_struct args[param_t];
+    struct compute_runner_struct args_comp[param_t];
     pthread_t thread_id[param_t];
     for(size_t i=0; i<param_t; ++i)
     {
-        args[i].as = as;
-        args[i].it = it;
-        args[i].roots_list = roots_list;
-        args[i].exponent = exponent;
-        args[i].param_l = param_l;
-        args[i].ix_start = i;
-        args[i].ix_step = param_t;
+        args_comp[i].as = as;
+        args_comp[i].it = it;
+        args_comp[i].roots_list = roots_list;
+        args_comp[i].exponent = exponent;
+        args_comp[i].param_l = param_l;
+        args_comp[i].ix_start = i;
+        args_comp[i].ix_step = param_t;
         if(param_l%param_t == 0)
-            args[i].ix_stop = param_l - param_t + i;
+            args_comp[i].ix_stop = param_l - param_t + i;
         else
-            args[i].ix_stop = param_l%param_t <= i ? param_l - param_l%param_t - param_t + i :  param_l - param_l%param_t + i;
+            args_comp[i].ix_stop = param_l%param_t <= i ? param_l - param_l%param_t - param_t + i :  param_l - param_l%param_t + i;
 
         /* launch thread */
         pthread_attr_t attr;
 		pthread_attr_init(&attr);
-        pthread_create(&thread_id[i], &attr, compute_runner, &args[i]);
+        pthread_create(&thread_id[i], &attr, compute_runner, &args_comp[i]);
 
     }
+
+    struct write_runner_struct args_write;
+    args_write.as = as;
+    args_write.it = it;
+    args_write.char_lookup_table = char_lookup_table;
+    args_write.grey_lookup = grey_lookup;
+    args_write.param_l = param_l;
+    args_write.header = header;
+    args_write.filename_convergence = filename_convergence;
+    args_write.filename_attractors = filename_attractors;
+
+    pthread_t thread_id_write;
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_create(&thread_id_write, &attr, write_runner, &args_write);
+
 
     for(size_t i=0; i<param_t; ++i)
         pthread_join(thread_id[i],NULL);
-    /* Writing */
-    FILE * pFile;
-    pFile = fopen(filename_attractors, "w");
-    printf("FIRST FILE:\n");
-    //fprintf(pFile, "P3\n%ld %ld\n255\n", param_l, param_l);
-    fwrite(&header, sizeof(char), strlen(header), pFile);
-    for ( size_t ix=0; ix < param_l; ++ix ) {
+    pthread_join(thread_id_write,NULL);
 
-        char pixels[15 * param_l + 1];
-        char* p = pixels;
-        for ( size_t jx=0; jx < param_l; ++jx ){
-
-            char* color = char_lookup_table[as[ix][jx]];
-
-            for(size_t j = 0; j<PIXEL_LEN; j++)
-            {
-                *(p) = color[j];
-                p++;
-            }
-
-        }
-        *(p) = '\n';
-        *(p+1) = '\0';
-        fwrite(&pixels, sizeof(char), strlen(pixels), pFile);
-
-    }
-
-    fclose (pFile);
-    printf("SECOND FILE:\n");
-    pFile = fopen(filename_convergence, "w");
-
-    //fprintf(pFile, "P3\n%ld %ld\n255\n", param_l, param_l);
-    fwrite(&header, sizeof(char), strlen(header), pFile);
-
-    for ( int ix=0; ix < param_l; ++ix ) {
-        char pixels[15 * param_l + 1];
-        char* p = pixels;
-        for ( int jx=0; jx < param_l; ++jx ){
-            int v = it[ix][jx]; //0-255
-            char* grey = grey_lookup[v<50? v : 50];
-            for(int i = 0; i<PIXEL_LEN; i++)
-            {
-                *(p) = grey[i];
-                p++;
-            }
-        }
-        *(p) = '\n';
-        *(p+1) = '\0';
-        fwrite(&pixels, sizeof(char), strlen(pixels), pFile);
-    }
     free(roots_list);
     free(as);
     free(it);
-    fclose (pFile);
+    return 0;
 }
