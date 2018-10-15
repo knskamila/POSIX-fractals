@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1539621563 source:c:\users\sandr\documents\hpc\posix-fractals\posix\main.c
+1539623719 source:c:\users\sandr\documents\hpc\posix-fractals\posix\main.c
 	<stdio.h>
 	<stdlib.h>
 	<string.h>

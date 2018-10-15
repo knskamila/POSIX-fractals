@@ -69,7 +69,7 @@ void precomputed_roots(int d, double ** roots_list)
     }
 }
 
-void compute_runner(void* arg)
+void* compute_runner(void* arg)
 {
     struct compute_runner_struct *arg_struct =
 			(struct compute_runner_struct*) arg;
@@ -106,7 +106,7 @@ void compute_runner(void* arg)
                 re = re + d_re;
                 im = im + d_im;
 
-                if( re*re > 1000000000000 || im*im > 1000000000000 || t3 < 0.0000000000000001 ){
+                if( re*re > 10000000000 || im*im > 10000000000 || t3 < 0.00000000000001 ){
                     converged = 1;
                     root = 0;
                     break;
@@ -126,6 +126,7 @@ void compute_runner(void* arg)
             arg_struct->as[ix][jx] = root;
         }
     }
+    return NULL;
 }
 
 int main(int argc, char *argv[])
