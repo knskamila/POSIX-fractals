@@ -5,10 +5,11 @@
 	<string.h>
 	<pthread.h>
 
-1539533934 source:c:\users\sandr\documents\skola\hpc\posix-fractals\posix\main.c
+1539600536 source:c:\users\sandr\documents\skola\hpc\posix-fractals\posix\main.c
 	<stdio.h>
 	<stdlib.h>
 	<string.h>
 	<pthread.h>
 	<math.h>
+	<pthread.h>
 

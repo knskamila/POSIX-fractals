@@ -3,6 +3,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <math.h>
+#include <pthread.h>
 
 #define THRESH 0.001
 #define NUM_COLORS 10
@@ -10,6 +11,17 @@
 #define PIXEL_LEN 12
 #define COLOR_DEPTH 51
 #define M_PI 3.14159265358979323846
+
+struct compute_runner_struct {
+	int ** as;
+	int ** it;
+	double ** roots_list;
+	int exponent;
+	int param_l;
+	int ix_start;
+	int ix_stop;
+	int ix_step;
+};
 
 void power_im(double * a_re, double * a_im, double * t_re, double * t_im, int  n)
 {
@@ -57,9 +69,66 @@ void precomputed_roots(int d, double ** roots_list)
     }
 }
 
-void thread_placeholder(void)
+void compute_runner(void* arg)
 {
-    //
+    struct compute_runner_struct *arg_struct =
+			(struct compute_runner_struct*) arg;
+
+    double re, im;
+    double d_re, d_im;
+    double t1, t2, t3;
+    int converged;
+    int root;
+    double c_1 = 1 - 1 / (double)arg_struct->exponent;
+    double c_2 = arg_struct->exponent;
+    int c_3 = arg_struct->exponent - 1;
+    for ( int ix=0; ix <= arg_struct->ix_stop; ix += arg_struct->ix_step ) {
+        for ( int jx=0; jx < arg_struct->param_l; ++jx ){
+            re = 4.0*(ix - arg_struct->param_l/2.0)/(double)arg_struct->param_l;
+            im = 4.0*(jx - arg_struct->param_l/2.0)/(double)arg_struct->param_l;
+
+            converged = 0;
+            root = 0;
+
+            while(!converged)
+            {
+                arg_struct->it[ix][jx]++;
+                d_re = c_1 * re;
+                d_im = c_1 * im;
+                t1 = re;
+                t2 = im;
+
+                power_im(&re, &im, &t1, &t2, c_3);
+                t3 = (re * re + im * im) * c_2;
+                re =  re / t3 ;
+                im = -im /t3;
+                re = re + d_re;
+                im = im + d_im;
+
+                if( re*re > 1000000 || im*im > 1000000 || t3 < 0.0000001 ){
+                    converged = 1;
+                    root = 0;
+                    break;
+                }
+                if(arg_struct->it[ix][jx] > 50){
+                    converged = 1;
+                    root = 0;
+                    break;
+                }
+                for(int i = 0; i < c_2; i++)
+                {
+                    double abs = abs_val2(&re, &im, &arg_struct->roots_list[i][0], &arg_struct->roots_list[i][1]);
+                    if(abs < THRESH*THRESH)
+                    {
+                        converged = 1;
+                        root = i;
+                        break;
+                    }
+                }
+            }
+            arg_struct->as[ix][jx] = root;
+        }
+    }
 }
 
 int main(int argc, char *argv[])
@@ -82,17 +151,7 @@ int main(int argc, char *argv[])
 
     int exponent = atoi(argv[argc-1]);
 
-    if(param_t > 1)
-    {
-        pthread_t thread_id[param_t];
-        for(int i=0; i<param_t; ++i)
-        {
-            pthread_create(&thread_id[i], NULL, &thread_placeholder, NULL);
-        }
 
-        for(int i=0; i<param_t; ++i)
-            pthread_join(thread_id[i],NULL);
-    }
 
     //storing parameter values as string to write later
     char string_l[10];
@@ -270,72 +329,45 @@ int main(int argc, char *argv[])
 
 
     //-----------------------------------------COMPUTATION 1:
-    double re, im;
-    double d_re, d_im;
-    double t1, t2, t3;
-    int converged;
-    int root;
-    double c_1 = 1 - 1 / (double)exponent;
-    double c_2 = (double)exponent;
-    int c_3 = exponent - 1;
-    for ( int ix=0; ix < param_l; ++ix ) {
-        for ( int jx=0; jx < param_l; ++jx ){
-            re = 4.0*(ix - param_l/2.0)/(double)param_l;
-            im = 4.0*(jx - param_l/2.0)/(double)param_l;
 
-            converged = 0;
-            root = 0;
+    struct compute_runner_struct args[param_t];
+    pthread_t thread_id[param_t];
+    for(size_t i=0; i<param_t; ++i)
+    {
+        args[i].as = as;
+        args[i].it = it;
+        args[i].roots_list = roots_list;
+        args[i].exponent = exponent;
+        args[i].param_l = param_l;
+        args[i].ix_start = i;
+        args[i].ix_step = param_t;
+        if(param_l%param_t == 0)
+            args[i].ix_stop = param_l - param_t + i;
+        else
+            args[i].ix_stop = param_l%param_t <= i ? param_l - param_l%param_t - param_t + i :  param_l - param_l%param_t + i;
 
-            while(!converged)
-            {
-                it[ix][jx]++;
-                d_re = c_1 * re;
-                d_im = c_1 * im;
-                t1 = re;
-                t2 = im;
+        /* launch thread */
+        pthread_attr_t attr;
+		pthread_attr_init(&attr);
+        pthread_create(&thread_id[i], &attr, compute_runner, &args[i]);
 
-                power_im(&re, &im, &t1, &t2, c_3);
-                t3 = (re * re + im * im) * c_2;
-                re =  re / t3 ;
-                im = -im /t3;
-                re = re + d_re;
-                im = im + d_im;
-
-                if(re*re > 1000000 || im*im > 1000000){
-                    converged = 1;
-                    root = 0;
-                    break;
-                }
-                if(it[ix][jx] > 50){
-                    converged = 1;
-                    root = 0;
-                    break;
-                }
-                for(int i = 0; i < exponent; i++)
-                {
-                    double abs = abs_val2(&re, &im, &roots_list[i][0], &roots_list[i][1]);
-                    if(abs < THRESH*THRESH)
-                    {
-                        converged = 1;
-                        root = i;
-                        break;
-                    }
-                }
-            }
-            as[ix][jx] = root;
-        }
     }
 
+    for(size_t i=0; i<param_t; ++i)
+        pthread_join(thread_id[i],NULL);
+    printf("as[1][999] = %d",as[1][999]);
+    /* Writing */
     FILE * pFile;
     pFile = fopen(filename_attractors, "w");
     printf("FIRST FILE:\n");
     //fprintf(pFile, "P3\n%ld %ld\n255\n", param_l, param_l);
     fwrite(&header, sizeof(char), strlen(header), pFile);
+    for ( size_t ix=0; ix < param_l; ++ix ) {
 
-    for ( int ix=0; ix < param_l; ++ix ) {
         char pixels[15 * param_l + 1];
         char* p = pixels;
-        for ( int jx=0; jx < param_l; ++jx ){
+        printf("Written line: %d\n",ix);
+        for ( size_t jx=0; jx < param_l; ++jx ){
             char* color = char_lookup_table[as[ix][jx]];
             for(int j = 0; j<PIXEL_LEN; j++)
             {
@@ -346,6 +378,7 @@ int main(int argc, char *argv[])
         *(p) = '\n';
         *(p+1) = '\0';
         fwrite(&pixels, sizeof(char), strlen(pixels), pFile);
+
     }
 
     fclose (pFile);
