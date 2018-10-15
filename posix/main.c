@@ -82,7 +82,7 @@ void compute_runner(void* arg)
     double c_1 = 1 - 1 / (double)arg_struct->exponent;
     double c_2 = arg_struct->exponent;
     int c_3 = arg_struct->exponent - 1;
-    for ( int ix=0; ix <= arg_struct->ix_stop; ix += arg_struct->ix_step ) {
+    for ( int ix=arg_struct->ix_start; ix <= arg_struct->ix_stop; ix += arg_struct->ix_step ) {
         for ( int jx=0; jx < arg_struct->param_l; ++jx ){
             re = 4.0*(ix - arg_struct->param_l/2.0)/(double)arg_struct->param_l;
             im = 4.0*(jx - arg_struct->param_l/2.0)/(double)arg_struct->param_l;
@@ -184,13 +184,15 @@ int main(int argc, char *argv[])
     precomputed_roots(exponent, roots_list);
 
     int ** as = (int**) malloc(sizeof(int*) * param_l); //array of roots
-    for ( size_t ix = 0; ix < param_l; ++ix )
-        as[ix] = (int*) malloc(sizeof(int) * param_l);
-
-    int ** it = (int**) malloc(sizeof(int*) * param_l); //array of iterations
-    for ( size_t ix = 0; ix < param_l; ++ix )
-        it[ix] = (int*) malloc(sizeof(int) * param_l);
-
+    int * as_p = (int*) malloc(sizeof(int) * param_l*param_l);
+    for ( size_t ix = 0, jx = 0; ix < param_l; ++ix, jx += param_l )
+        as[ix] = as_p + jx;
+    printf("Size of as: %d\n", sizeof(int)*param_l*param_l/1000000000);
+    int ** it = (int**) malloc(sizeof(int*) * param_l); //array of roots
+    int * it_p = (int*) malloc(sizeof(int) * param_l*param_l);
+    for ( size_t ix = 0, jx = 0; ix < param_l; ++ix, jx += param_l )
+        it[ix] = it_p + jx;
+    printf("Allocating arrays\n");
     //-----------------------------------------initialization:
     for ( int ix=0; ix < param_l; ++ix ) {
         for ( int jx=0; jx < param_l; jx+=2 ){
@@ -198,7 +200,7 @@ int main(int argc, char *argv[])
             it[ix][jx+1] = 0; //should it?
         }
     }
-
+    printf("Allocating arrays\n");
     //-----------------------------------------color lookup table:
     int ** color_table = (int**) malloc(sizeof(int*) * NUM_COLORS);
     for ( size_t ix = 0; ix < NUM_COLORS; ++ix )
@@ -355,7 +357,6 @@ int main(int argc, char *argv[])
 
     for(size_t i=0; i<param_t; ++i)
         pthread_join(thread_id[i],NULL);
-    printf("as[1][999] = %d",as[1][999]);
     /* Writing */
     FILE * pFile;
     pFile = fopen(filename_attractors, "w");
@@ -366,14 +367,16 @@ int main(int argc, char *argv[])
 
         char pixels[15 * param_l + 1];
         char* p = pixels;
-        printf("Written line: %d\n",ix);
         for ( size_t jx=0; jx < param_l; ++jx ){
+
             char* color = char_lookup_table[as[ix][jx]];
-            for(int j = 0; j<PIXEL_LEN; j++)
+
+            for(size_t j = 0; j<PIXEL_LEN; j++)
             {
                 *(p) = color[j];
                 p++;
             }
+
         }
         *(p) = '\n';
         *(p+1) = '\0';
