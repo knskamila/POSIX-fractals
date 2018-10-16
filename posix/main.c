@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,6 +6,7 @@
 #include <math.h>
 #include <pthread.h>
 #include <time.h>
+#include <unistd.h>
 
 #define THRESH 0.001
 #define NUM_COLORS 10
@@ -14,10 +16,11 @@
 #define M_PI 3.14159265358979323846
 
 pthread_mutex_t mutex_1 = PTHREAD_MUTEX_INITIALIZER;
-char item_done[100000];
+char item_done[50000];
+
 
 struct compute_runner_struct {
-	short int ** as;
+	char ** as;
 	short int ** it;
 	double ** roots_list;
 	int exponent;
@@ -30,7 +33,7 @@ struct compute_runner_struct {
 
 struct write_runner_struct
 {
-    short int ** as;
+    char ** as;
     short int ** it;
     char ** char_lookup_table;
     char ** grey_lookup;
@@ -99,6 +102,7 @@ void* compute_runner(void* arg)
     double c_1 = 1 - 1 / (double)arg_struct->exponent;
     double c_2 = arg_struct->exponent;
     int c_3 = arg_struct->exponent - 1;
+
     for ( int ix=arg_struct->ix_start; ix <= arg_struct->ix_stop; ix += arg_struct->ix_step ) {
         for ( int jx=0; jx < arg_struct->param_l; ++jx ){
             re = 4.0*(ix - arg_struct->param_l/2.0)/(double)arg_struct->param_l;
@@ -145,11 +149,12 @@ void* compute_runner(void* arg)
             }
             arg_struct->as[ix][jx] = root;
 
-            pthread_mutex_lock(&mutex_1);
-            item_done[ix]=1;
-            pthread_mutex_unlock(&mutex_1);
+
 
         }
+        pthread_mutex_lock(&mutex_1);
+            item_done[ix]=1;
+        pthread_mutex_unlock(&mutex_1);
     }
     pthread_exit(NULL);
 }
@@ -167,8 +172,8 @@ void* write_runner(void* arg)
     pFile_r = fopen(arg_struct->filename_attractors, "w");
     pFile_c = fopen(arg_struct->filename_convergence, "w");
 
-    fwrite(&arg_struct->header, sizeof(char), strlen(arg_struct->header), pFile_r);
-    fwrite(&arg_struct->header, sizeof(char), strlen(arg_struct->header), pFile_c);
+    fwrite(arg_struct->header, sizeof(char), strlen(arg_struct->header), pFile_r);
+    fwrite(arg_struct->header, sizeof(char), strlen(arg_struct->header), pFile_c);
 
     for ( size_t ix = 0; ix < arg_struct->param_l; )
     {
@@ -179,15 +184,13 @@ void* write_runner(void* arg)
 
         if ( item_done_loc[ix] == 0 )
         {
-            nanosleep((const struct timespec[]){{0, 1000}}, NULL);
+
+            usleep(100);
             continue;
         }
 
         for ( ; ix < arg_struct->param_l && item_done_loc[ix] != 0; ++ix )
         {
-
-
-
 
 
                 char pixels_r[15 * arg_struct->param_l + 1];
@@ -204,6 +207,7 @@ void* write_runner(void* arg)
                 }
                 *(p_r) = '\n';
                 *(p_r+1) = '\0';
+
                 fwrite(&pixels_r, sizeof(char), strlen(pixels_r), pFile_r);
 
 
@@ -224,6 +228,7 @@ void* write_runner(void* arg)
 
       }
     }
+    free(item_done_loc);
     fclose (pFile_c);
     fclose (pFile_r);
     pthread_exit(NULL);
@@ -281,16 +286,16 @@ int main(int argc, char *argv[])
 
     precomputed_roots(exponent, roots_list);
 
-    short int ** as = (short int**) malloc(sizeof(short int*) * param_l); //array of roots
-    short int * as_p = (short int*) malloc(sizeof(short int) * param_l*param_l);
+    char ** as = (char**) malloc(sizeof(char*) * param_l); //array of roots
+    char* as_p = (char*) malloc(sizeof(char) * param_l*param_l);
     for ( size_t ix = 0, jx = 0; ix < param_l; ++ix, jx += param_l )
         as[ix] = as_p + jx;
-
+    printf("allocated mem 0\n");
     short int ** it = (short int**) malloc(sizeof(short int*) * param_l); //array of roots
     short int * it_p = (short int*) malloc(sizeof(short int) * param_l*param_l);
     for ( size_t ix = 0, jx = 0; ix < param_l; ++ix, jx += param_l )
         it[ix] = it_p + jx;
-
+    printf("allocated mem 1\n");
 
     //-----------------------------------------initialization:
     for ( int ix=0; ix < param_l; ++ix ) {
@@ -406,7 +411,7 @@ int main(int argc, char *argv[])
         pthread_attr_t attr;
 		pthread_attr_init(&attr);
         pthread_create(&thread_id[i], &attr, compute_runner, &args_comp[i]);
-
+        printf("lance compute thread %d\n",i);
     }
 
     struct write_runner_struct args_write;
@@ -423,12 +428,12 @@ int main(int argc, char *argv[])
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_create(&thread_id_write, &attr, write_runner, &args_write);
-
+    printf("lance write thread %d\n",0);
 
     for(size_t i=0; i<param_t; ++i)
         pthread_join(thread_id[i],NULL);
     pthread_join(thread_id_write,NULL);
-
+    printf("Joined all treads");
     free(roots_list);
     free(as);
     free(it);
