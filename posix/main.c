@@ -43,7 +43,7 @@ struct write_runner_struct
     char *filename_attractors;
 };
 
-void power_im(double * a_re, double * a_im, double * t_re, double * t_im, int  n)
+inline void power_im(double * a_re, double * a_im, double * t_re, double * t_im, int  n)
 {
     double temp;
 
@@ -73,12 +73,12 @@ void power_im(double * a_re, double * a_im, double * t_re, double * t_im, int  n
 
 
 
-double abs_val2(double* re, double* im, double* c_re, double* c_im)
+inline double abs_val2(double* re, double* im, double* c_re, double* c_im)
 {
     return (*re - *c_re)*(*re - *c_re) + (*im - *c_im)*(*im - *c_im);
 }
 
-void precomputed_roots(int d, double ** roots_list)
+inline void precomputed_roots(int d, double ** roots_list)
 {
     roots_list[0][0] = 0;
     roots_list[0][1] = 0;
@@ -89,8 +89,9 @@ void precomputed_roots(int d, double ** roots_list)
     }
 }
 
-void* compute_runner(void* arg)
+inline void* compute_runner(void* arg)
 {
+
     struct compute_runner_struct *arg_struct =
 			(struct compute_runner_struct*) arg;
 
@@ -103,8 +104,9 @@ void* compute_runner(void* arg)
     double c_2 = arg_struct->exponent;
     int c_3 = arg_struct->exponent - 1;
 
-    for ( int ix=arg_struct->ix_start; ix <= arg_struct->ix_stop; ix += arg_struct->ix_step ) {
-        for ( int jx=0; jx < arg_struct->param_l; ++jx ){
+    for ( size_t ix=arg_struct->ix_start; ix <= arg_struct->ix_stop; ix += arg_struct->ix_step ) {
+        for ( size_t jx=0; jx < arg_struct->param_l; ++jx ){
+
             re = 4.0*(ix - arg_struct->param_l/2.0)/(double)arg_struct->param_l;
             im = 4.0*(jx - arg_struct->param_l/2.0)/(double)arg_struct->param_l;
 
@@ -113,6 +115,7 @@ void* compute_runner(void* arg)
 
             while(!converged)
             {
+
                 arg_struct->it[ix][jx]++;
                 d_re = c_1 * re;
                 d_im = c_1 * im;
@@ -128,13 +131,13 @@ void* compute_runner(void* arg)
                 im = im + d_im;
 
 
-                if( re*re > 10000000000 || im*im > 10000000000 || t3 < 0.00000000000001 ){
+                if( re*re > 10000000000 || im*im > 10000000000 || t3 < 0.00000000000001 || arg_struct->it[ix][jx] >250){
                     converged = 1;
                     root = 0;
                     break;
                 }
 
-                  for(int i = 0; i <= c_2; i++)
+                  for(size_t i = 0; i <= c_2; i++)
                 {
                     double abs = abs_val2(&re, &im, &arg_struct->roots_list[i][0], &arg_struct->roots_list[i][1]);
                     if(abs < THRESH*THRESH)
@@ -147,6 +150,7 @@ void* compute_runner(void* arg)
 
 
             }
+
             arg_struct->as[ix][jx] = root;
 
 
@@ -159,7 +163,7 @@ void* compute_runner(void* arg)
     pthread_exit(NULL);
 }
 
-void* write_runner(void* arg)
+inline void* write_runner(void* arg)
 {
 
     struct write_runner_struct *arg_struct =(struct write_runner_struct*) arg;
@@ -185,46 +189,44 @@ void* write_runner(void* arg)
         if ( item_done_loc[ix] == 0 )
         {
 
-            usleep(100);
+            nanosleep((const struct timespec[]){{0, 100000L}}, NULL);
             continue;
         }
 
         for ( ; ix < arg_struct->param_l && item_done_loc[ix] != 0; ++ix )
         {
+            char pixels_r[15 * arg_struct->param_l + 1];
+            char* p_r = pixels_r;
+            for ( size_t jx=0; jx < arg_struct->param_l; ++jx ){
 
+                char* color = arg_struct->char_lookup_table[arg_struct->as[ix][jx]];
 
-                char pixels_r[15 * arg_struct->param_l + 1];
-                char* p_r = pixels_r;
-                for ( size_t jx=0; jx < arg_struct->param_l; ++jx ){
-
-                    char* color = arg_struct->char_lookup_table[arg_struct->as[ix][jx]];
-
-                    for(size_t j = 0; j<PIXEL_LEN; j++)
-                    {
-                        *(p_r) = color[j];
-                        p_r++;
-                    }
+                for(size_t j = 0; j<PIXEL_LEN; j++)
+                {
+                    *(p_r) = color[j];
+                    p_r++;
                 }
-                *(p_r) = '\n';
-                *(p_r+1) = '\0';
+            }
+            *(p_r) = '\n';
+            *(p_r+1) = '\0';
 
-                fwrite(&pixels_r, sizeof(char), strlen(pixels_r), pFile_r);
+            fwrite(&pixels_r, sizeof(char), strlen(pixels_r), pFile_r);
 
 
-                char pixels_c[15 * arg_struct->param_l + 1];
-                char* p_c = pixels_c;
-                for ( int jx=0; jx < arg_struct->param_l; ++jx ){
-                    int v = arg_struct->it[ix][jx]; //0-255
-                    char* grey = arg_struct->grey_lookup[v<50? v : 50];
-                    for(int i = 0; i<PIXEL_LEN; i++)
-                    {
-                        *(p_c) = grey[i];
-                        p_c++;
-                    }
+            char pixels_c[15 * arg_struct->param_l + 1];
+            char* p_c = pixels_c;
+            for ( int jx=0; jx < arg_struct->param_l; ++jx ){
+                int v = arg_struct->it[ix][jx]; //0-255
+                char* grey = arg_struct->grey_lookup[v<50 ? v : 50];
+                for(int i = 0; i<PIXEL_LEN; i++)
+                {
+                    *(p_c) = grey[i];
+                    p_c++;
                 }
-                *(p_c) = '\n';
-                *(p_c+1) = '\0';
-                fwrite(&pixels_c, sizeof(char), strlen(pixels_c), pFile_c);
+            }
+            *(p_c) = '\n';
+            *(p_c+1) = '\0';
+            fwrite(&pixels_c, sizeof(char), strlen(pixels_c), pFile_c);
 
       }
     }
@@ -290,14 +292,15 @@ int main(int argc, char *argv[])
     char* as_p = (char*) malloc(sizeof(char) * param_l*param_l);
     for ( size_t ix = 0, jx = 0; ix < param_l; ++ix, jx += param_l )
         as[ix] = as_p + jx;
-    printf("allocated mem 0\n");
-    short int ** it = (short int**) malloc(sizeof(short int*) * param_l); //array of roots
-    short int * it_p = (short int*) malloc(sizeof(short int) * param_l*param_l);
+
+    unsigned char ** it = (unsigned char**) malloc(sizeof(unsigned char*) * param_l); //array of roots
+    unsigned char * it_p = (unsigned char*) malloc( param_l*param_l *sizeof(unsigned char));
     for ( size_t ix = 0, jx = 0; ix < param_l; ++ix, jx += param_l )
         it[ix] = it_p + jx;
-    printf("allocated mem 1\n");
+
 
     //-----------------------------------------initialization:
+
     for ( int ix=0; ix < param_l; ++ix ) {
         for ( int jx=0; jx < param_l; jx+=2 ){
             it[ix][jx] = 0;
@@ -406,12 +409,10 @@ int main(int argc, char *argv[])
             args_comp[i].ix_stop = param_l - param_t + i;
         else
             args_comp[i].ix_stop = param_l%param_t <= i ? param_l - param_l%param_t - param_t + i :  param_l - param_l%param_t + i;
-
         /* launch thread */
         pthread_attr_t attr;
 		pthread_attr_init(&attr);
         pthread_create(&thread_id[i], &attr, compute_runner, &args_comp[i]);
-        printf("lance compute thread %d\n",i);
     }
 
     struct write_runner_struct args_write;
@@ -428,12 +429,11 @@ int main(int argc, char *argv[])
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_create(&thread_id_write, &attr, write_runner, &args_write);
-    printf("lance write thread %d\n",0);
 
     for(size_t i=0; i<param_t; ++i)
         pthread_join(thread_id[i],NULL);
     pthread_join(thread_id_write,NULL);
-    printf("Joined all treads");
+
     free(roots_list);
     free(as);
     free(it);
