@@ -21,7 +21,7 @@ char item_done[50000];
 
 struct compute_runner_struct {
 	char ** as;
-	short int ** it;
+	unsigned char ** it;
 	double ** roots_list;
 	int exponent;
 	int param_l;
@@ -34,7 +34,7 @@ struct compute_runner_struct {
 struct write_runner_struct
 {
     char ** as;
-    short int ** it;
+    unsigned char ** it;
     char ** char_lookup_table;
     char ** grey_lookup;
     int param_l;
@@ -43,7 +43,7 @@ struct write_runner_struct
     char *filename_attractors;
 };
 
-inline void power_im(double * a_re, double * a_im, double * t_re, double * t_im, int  n)
+void power_im(double * a_re, double * a_im, double * t_re, double * t_im, int  n)
 {
     double temp;
 
@@ -73,12 +73,12 @@ inline void power_im(double * a_re, double * a_im, double * t_re, double * t_im,
 
 
 
-inline double abs_val2(double* re, double* im, double* c_re, double* c_im)
+double abs_val2(double* re, double* im, double* c_re, double* c_im)
 {
     return (*re - *c_re)*(*re - *c_re) + (*im - *c_im)*(*im - *c_im);
 }
 
-inline void precomputed_roots(int d, double ** roots_list)
+void precomputed_roots(int d, double ** roots_list)
 {
     roots_list[0][0] = 0;
     roots_list[0][1] = 0;
@@ -89,12 +89,11 @@ inline void precomputed_roots(int d, double ** roots_list)
     }
 }
 
-inline void* compute_runner(void* arg)
+void* compute_runner(void* arg)
 {
 
     struct compute_runner_struct *arg_struct =
 			(struct compute_runner_struct*) arg;
-
     double re, im;
     double d_re, d_im;
     double t1, t2, t3, t4;
@@ -103,6 +102,7 @@ inline void* compute_runner(void* arg)
     double c_1 = 1 - 1 / (double)arg_struct->exponent;
     double c_2 = arg_struct->exponent;
     int c_3 = arg_struct->exponent - 1;
+
 
     for ( size_t ix=arg_struct->ix_start; ix <= arg_struct->ix_stop; ix += arg_struct->ix_step ) {
         for ( size_t jx=0; jx < arg_struct->param_l; ++jx ){
@@ -113,9 +113,9 @@ inline void* compute_runner(void* arg)
             converged = 0;
             root = 0;
 
+
             while(!converged)
             {
-
                 arg_struct->it[ix][jx]++;
                 d_re = c_1 * re;
                 d_im = c_1 * im;
@@ -131,13 +131,12 @@ inline void* compute_runner(void* arg)
                 im = im + d_im;
 
 
-                if( re*re > 10000000000 || im*im > 10000000000 || t3 < 0.00000000000001 || arg_struct->it[ix][jx] >250){
+                if( re*re > 10000000000 || im*im > 10000000000 || t3 < 0.00000000000001){
                     converged = 1;
                     root = 0;
                     break;
                 }
-
-                  for(size_t i = 0; i <= c_2; i++)
+                for(size_t i = 0; i <= c_2; i++)
                 {
                     double abs = abs_val2(&re, &im, &arg_struct->roots_list[i][0], &arg_struct->roots_list[i][1]);
                     if(abs < THRESH*THRESH)
@@ -156,6 +155,7 @@ inline void* compute_runner(void* arg)
 
 
         }
+
         pthread_mutex_lock(&mutex_1);
             item_done[ix]=1;
         pthread_mutex_unlock(&mutex_1);
@@ -163,7 +163,7 @@ inline void* compute_runner(void* arg)
     pthread_exit(NULL);
 }
 
-inline void* write_runner(void* arg)
+void* write_runner(void* arg)
 {
 
     struct write_runner_struct *arg_struct =(struct write_runner_struct*) arg;
@@ -185,16 +185,18 @@ inline void* write_runner(void* arg)
         if ( item_done[ix] != 0 )
             memcpy(item_done_loc, item_done, arg_struct->param_l*sizeof(char));
         pthread_mutex_unlock(&mutex_1);
-
+        //for(size_t i=0; i<arg_struct->param_l; i++)
+          //  printf("%d: ",item_done_loc[i]);
         if ( item_done_loc[ix] == 0 )
         {
 
-            nanosleep((const struct timespec[]){{0, 100000L}}, NULL);
+            nanosleep((const struct timespec[]){{0, 10000000L}}, NULL);
             continue;
         }
 
         for ( ; ix < arg_struct->param_l && item_done_loc[ix] != 0; ++ix )
         {
+           // printf(" ix1: %d\n",ix);
             char pixels_r[15 * arg_struct->param_l + 1];
             char* p_r = pixels_r;
             for ( size_t jx=0; jx < arg_struct->param_l; ++jx ){
@@ -207,6 +209,7 @@ inline void* write_runner(void* arg)
                     p_r++;
                 }
             }
+
             *(p_r) = '\n';
             *(p_r+1) = '\0';
 
@@ -294,20 +297,20 @@ int main(int argc, char *argv[])
         as[ix] = as_p + jx;
 
     unsigned char ** it = (unsigned char**) malloc(sizeof(unsigned char*) * param_l); //array of roots
-    unsigned char * it_p = (unsigned char*) malloc( param_l*param_l *sizeof(unsigned char));
+    printf("Parml: %d\n", param_l*param_l);
+    unsigned char * it_p = (unsigned char*) calloc( param_l*param_l, sizeof(unsigned char));
     for ( size_t ix = 0, jx = 0; ix < param_l; ++ix, jx += param_l )
         it[ix] = it_p + jx;
 
-
     //-----------------------------------------initialization:
-
+    /*
     for ( int ix=0; ix < param_l; ++ix ) {
         for ( int jx=0; jx < param_l; jx+=2 ){
             it[ix][jx] = 0;
             it[ix][jx+1] = 0; //should it?
         }
     }
-
+    */
     //-----------------------------------------color lookup table:
     char ** char_lookup_table = (char**) malloc(sizeof(char*) * NUM_COLORS);
     for ( size_t ix = 0; ix < NUM_COLORS; ++ix )

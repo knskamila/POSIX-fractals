@@ -11,7 +11,9 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-t10 -l30000 7" />
+				<Option parameters="-t4 -l2000 3" />
+				<Option host_application="main.exe" />
+				<Option run_host_application_in_terminal="0" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
@@ -21,6 +23,7 @@
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option parameters="-t4 -l1000 7" />
 				<Compiler>
 					<Add option="-O2" />
 				</Compiler>
@@ -31,7 +34,13 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-pg" />
+			<Add option="-Og" />
+			<Add option="-g" />
 		</Compiler>
+		<Linker>
+			<Add option="-pg -lgmon" />
+		</Linker>
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
