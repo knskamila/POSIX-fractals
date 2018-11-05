@@ -86,6 +86,7 @@ void precomputed_roots(int d, double ** roots_list)
     {
         roots_list[ix][0] = cos(2* M_PI * ix / (double)d);
         roots_list[ix][1] = sin(2 * M_PI * ix / (double)d);
+        printf("root%d: root_re %f root_im %f\n", ix, roots_list[ix][0], roots_list[ix][1]);
     }
 }
 
@@ -96,7 +97,7 @@ void* compute_runner(void* arg)
 			(struct compute_runner_struct*) arg;
     double re, im;
     double d_re, d_im;
-    double t1, t2, t3, t4;
+    double t1, t2, t3, t4, temp_1, temp_2;
     int converged;
     int root;
     double c_1 = 1 - 1 / (double)arg_struct->exponent;
@@ -112,8 +113,6 @@ void* compute_runner(void* arg)
 
             converged = 0;
             root = 0;
-
-
             while(!converged)
             {
                 arg_struct->it[ix][jx]++;
@@ -125,13 +124,13 @@ void* compute_runner(void* arg)
                 power_im(&re, &im, &t1, &t2, c_3);
                 t3 = (re * re + im * im);
                 t4 = t3 * c_2;
-                re =  re / t4 ;
-                im = -im /t4;
+                re =  re / t4;
+                im = -im / t4;
                 re = re + d_re;
                 im = im + d_im;
+                if(ix==500 && jx == 500)printf("%f i%f\n",re, im);
 
-
-                if( re*re > 10000000000 || im*im > 10000000000 || t3 < 0.00000000000001){
+                if( (temp_1 = re*re) > 10000000000 || (temp_2 = im*im) > 10000000000 || t4 == 0 ){
                     converged = 1;
                     root = 0;
                     break;
@@ -139,7 +138,7 @@ void* compute_runner(void* arg)
                 for(size_t i = 0; i <= c_2; i++)
                 {
                     double abs = abs_val2(&re, &im, &arg_struct->roots_list[i][0], &arg_struct->roots_list[i][1]);
-                    if(abs < THRESH*THRESH)
+                    if(abs < THRESH)
                     {
                         converged = 1;
                         root = i;
@@ -160,6 +159,7 @@ void* compute_runner(void* arg)
             item_done[ix]=1;
         pthread_mutex_unlock(&mutex_1);
     }
+    printf("thread %d first root %d i%d\n",arg_struct->ix_start, arg_struct->roots_list[0][0],arg_struct->roots_list[0][1]);
     pthread_exit(NULL);
 }
 
@@ -190,7 +190,7 @@ void* write_runner(void* arg)
         if ( item_done_loc[ix] == 0 )
         {
 
-            nanosleep((const struct timespec[]){{0, 10000000L}}, NULL);
+            nanosleep((const struct timespec[]){{0, 100000L}}, NULL);
             continue;
         }
 
