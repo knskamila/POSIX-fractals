@@ -86,7 +86,6 @@ void precomputed_roots(int d, double ** roots_list)
     {
         roots_list[ix][0] = cos(2* M_PI * ix / (double)d);
         roots_list[ix][1] = sin(2 * M_PI * ix / (double)d);
-        printf("root%d: root_re %f root_im %f\n", ix, roots_list[ix][0], roots_list[ix][1]);
     }
 }
 
@@ -159,7 +158,6 @@ void* compute_runner(void* arg)
             item_done[ix]=1;
         pthread_mutex_unlock(&mutex_1);
     }
-    printf("thread %d first root %d i%d\n",arg_struct->ix_start, arg_struct->roots_list[0][0],arg_struct->roots_list[0][1]);
     pthread_exit(NULL);
 }
 
