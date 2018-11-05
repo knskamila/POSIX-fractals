@@ -127,7 +127,6 @@ void* compute_runner(void* arg)
                 im = -im / t4;
                 re = re + d_re;
                 im = im + d_im;
-                if(ix==500 && jx == 500)printf("%f i%f\n",re, im);
 
                 if( (temp_1 = re*re) > 10000000000 || (temp_2 = im*im) > 10000000000 || t4 == 0 ){
                     converged = 1;
@@ -279,9 +278,9 @@ int main(int argc, char *argv[])
     strcat(header, string_l);
     strcat(header, "\n255\n");
 
-    printf("t = %d, l = %d, exponent is %d\n", param_t, param_l, exponent);
-    printf("filename1: %s\n", filename_attractors);
-    printf("filename2: %s\n", filename_convergence);
+   // printf("t = %d, l = %d, exponent is %d\n", param_t, param_l, exponent);
+    //printf("filename1: %s\n", filename_attractors);
+    //printf("filename2: %s\n", filename_convergence);
 
     double ** roots_list = (double**) malloc(sizeof(double*) * (exponent+1)*2); //array of roots
     for ( size_t ix = 0; ix < exponent+1; ++ix )
@@ -295,7 +294,6 @@ int main(int argc, char *argv[])
         as[ix] = as_p + jx;
 
     unsigned char ** it = (unsigned char**) malloc(sizeof(unsigned char*) * param_l); //array of roots
-    printf("Parml: %d\n", param_l*param_l);
     unsigned char * it_p = (unsigned char*) calloc( param_l*param_l, sizeof(unsigned char));
     for ( size_t ix = 0, jx = 0; ix < param_l; ++ix, jx += param_l )
         it[ix] = it_p + jx;
