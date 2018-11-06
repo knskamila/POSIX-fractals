@@ -13,17 +13,17 @@ Similarly, there are no formulas for the value nor the derivative for a given ex
 The condition is simply that there must be three arguments given. Arguments starting with respective letters are parsed using `atoi` function.
 
 ## Synchronization of compute and write threads
-Since writing of the file can (and should) begin before all the values are computed and stored in the array, a mutex lock had to be added so that accessing the memory by another thread does not interfere with the functions calculating the roots and iterations. For synchronization, an `item_done` array was introduced, which stores the information whether a given line was already computed, allowing for writing the data row by row as soon as the computing is done.
+Since writing of the file can (and should) begin before all the values are computed and stored in the array, a mutex lock had to be added so that accessing the memory by another thread does not interfere with the functions calculating the roots and iterations. For synchronization, an `item_done` array was introduced, which stores the information whether a given line was already computed, allowing for writing the data row by row as soon as they are done.
 
 ## Data transfer between compute and write threads
-The writing function checks if the `item_done` value of the next row is different from 0. If it's not the case, the thread sleeps, otherwise the data is transferred to `item_done_loc` so that its values can be accessed without interrupting the other thread.
-Since the values in `as` and `it` arrays are computed once and do not depend on each other, they can be accessed given the information which values were already computed.
+The writing function `write_runner` checks if the `item_done` value of the next row is different from 0. If it's not the case, the thread sleeps, otherwise the data is transferred to `item_done_loc` so that its values can be accessed without interrupting the other thread.
+Since the values in `as` and `it` arrays (root, number of iterations) are computed once and do not depend on each other, they can be accessed given the information which values were already computed.
 
 ## Checking the convergence and divergence conditions
-The points are assumed to have converged if their absolute distance to one of the roots is smaller than the threshold of 10^-3. Furthermore, the center of the coordinate space is treated as a root, since Newton method would never reach convergence for points close to it. Similarly, the iteration does not continue if any part of the number reaches 10^10. 
+The points are assumed to have converged if their absolute distance to one of the roots is smaller than the threshold (`THRESH`) of 10^-3. Furthermore, the center of the coordinate space is treated as a root, since Newton method would never reach convergence for points close to it. Similarly, the iteration does not continue if any part of the number reaches 10^10. 
 These conditions are checked in order every iteration, before doing the computations.
 ~~~~~~~~
-                if( (temp_1 = re*re) > 10000000000 || (temp_2 = im*im) > 10000000000 || t4 == 0 ){
+                if( (temp_1 = re*re)/10000000000 > 10000000000 || (temp_2 = im*im)/10000000000 > 10000000000 || t4 == 0 ){
                     converged = 1;
                     root = 0;
                     break;
@@ -40,11 +40,11 @@ These conditions are checked in order every iteration, before doing the computat
                 }
 ~~~~~~~~
 ## Computation of of x_n in the iteration step.
-As described above, the formulas aren't hardcoded and the program can calculate the iteration steps for any given exponent value. Each time step a corresponding value in an iteration matrix – storing the number of steps it took to converge – is incremented.
+As described above, the root formulas are generated and the program can calculate the iteration steps for any given exponent value. Each time step a corresponding value in an iteration matrix – storing the number of steps it took to converge – is incremented.
 ~~~~~~
 while(!converged)
 {
-          arg_struct->it\[ix\]\[jx\]++;
+          arg_struct->it[ix][jx]++;
           d_re = c_1 * re;
           d_im = c_1 * im;
           t1 = re;
