@@ -13,10 +13,10 @@ Similarly, there are no formulas for the value nor the derivative for a given ex
 The condition is simply that there must be three arguments given. Arguments starting with respective letters are parsed using `atoi` function.
 
 ## Synchronization of compute and write threads
-Sadly, we did not succeed at implementing synchronization, which made it impossible to pass the test. Writing is then made after the calculation of all convergence points is completed.
+Since writing of the file can (and should) begin before all the values are computed and stored in the array, a mutex lock had to be added so that accessing the memory by another thread does not interfere with the functions calculating the roots and iterations. Moreover, an `item_done` array was introduced, which stores the information whether a given line was already computed.
 
 ## Data transfer between compute and write threads
-Same as above.
+The writing function checks if the `item_done` value is different from 0. If it's not the case, the thread sleeps, otherwise the data is transferred to `item_done_loc` so that value arrays can be worked on without interrupting the other thread.
 
 ## Checking the convergence and divergence conditions
 The points are assumed to have converged if their absolute distance to one of the roots is smaller than the threshold of 10^-3. Furthermore, the center of the coordinate space is treated as a root, since Newton method would never reach convergence for points close to it. Similarly, the iteration does not continue if any part of the number reaches 10^10. 
