@@ -9,7 +9,6 @@
 
 #define THRESH 0.001
 #define NUM_COLORS 10
-#define NUM_ROOTS 4 //for testing
 #define PIXEL_LEN 12
 #define COLOR_DEPTH 51
 #define M_PI 3.14159265358979323846
