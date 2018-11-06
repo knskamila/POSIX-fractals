@@ -139,14 +139,9 @@ void* compute_runner(void* arg)
                         break;
                     }
                 }
-
-
             }
 
             arg_struct->as[ix][jx] = root;
-
-
-
         }
 
         pthread_mutex_lock(&mutex_1);
@@ -178,8 +173,6 @@ void* write_runner(void* arg)
         if ( item_done[ix] != 0 )
             memcpy(item_done_loc, item_done, arg_struct->param_l*sizeof(char));
         pthread_mutex_unlock(&mutex_1);
-        //for(size_t i=0; i<arg_struct->param_l; i++)
-          //  printf("%d: ",item_done_loc[i]);
         if ( item_done_loc[ix] == 0 )
         {
 
@@ -252,8 +245,6 @@ int main(int argc, char *argv[])
 
     int exponent = atoi(argv[argc-1]);
 
-
-
     //storing parameter values as string to write later
     char string_l[20];
     char string_t[5];
@@ -315,7 +306,7 @@ int main(int argc, char *argv[])
 
     char_lookup_table[9] = "100 255 150 ";
 
-    //-----------------------------------------silly grey lookup table:
+    //-----------------------------------------grey lookup table:
     char ** grey_lookup = (char**) malloc(sizeof(char*) * COLOR_DEPTH);
     for ( size_t ix = 0; ix < COLOR_DEPTH; ++ix )
         grey_lookup[ix] = (char*) malloc(sizeof(char) * PIXEL_LEN);
@@ -374,7 +365,7 @@ int main(int argc, char *argv[])
     grey_lookup[51] = "255 255 255 ";
 
 
-    //-----------------------------------------COMPUTATION 1:
+    //-----------------------------------------COMPUTATION:
 
     struct compute_runner_struct args_comp[param_t];
     pthread_t thread_id[param_t];
