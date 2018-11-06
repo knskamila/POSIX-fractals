@@ -17,7 +17,6 @@
 pthread_mutex_t mutex_1 = PTHREAD_MUTEX_INITIALIZER;
 char item_done[50000];
 
-
 struct compute_runner_struct {
 	char ** as;
 	unsigned char ** it;
@@ -27,7 +26,6 @@ struct compute_runner_struct {
 	int ix_start;
 	int ix_stop;
 	int ix_step;
-
 };
 
 struct write_runner_struct
@@ -53,7 +51,6 @@ void power_im(double * a_re, double * a_im, double * t_re, double * t_im, int  n
     }
     else if (n % 2 == 0)
     {
-
         power_im(a_re, a_im, t_re, t_im, n / 2);
         temp = *a_re * *a_re - *a_im * *a_im;
         *a_im = *a_re * *a_im + *a_im * *a_re;
@@ -87,7 +84,6 @@ void precomputed_roots(int d, double ** roots_list)
 
 void* compute_runner(void* arg)
 {
-
     struct compute_runner_struct *arg_struct =
 			(struct compute_runner_struct*) arg;
     double re, im;
@@ -98,7 +94,6 @@ void* compute_runner(void* arg)
     double c_1 = 1 - 1 / (double)arg_struct->exponent;
     double c_2 = arg_struct->exponent;
     int c_3 = arg_struct->exponent - 1;
-
 
     for ( size_t ix=arg_struct->ix_start; ix <= arg_struct->ix_stop; ix += arg_struct->ix_step ) {
         for ( size_t jx=0; jx < arg_struct->param_l; ++jx ){
@@ -153,7 +148,6 @@ void* compute_runner(void* arg)
 
 void* write_runner(void* arg)
 {
-
     struct write_runner_struct *arg_struct =(struct write_runner_struct*) arg;
 
     char * item_done_loc = (char*)calloc(arg_struct->param_l, sizeof(char));
@@ -175,7 +169,6 @@ void* write_runner(void* arg)
         pthread_mutex_unlock(&mutex_1);
         if ( item_done_loc[ix] == 0 )
         {
-
             nanosleep((const struct timespec[]){{0, 100000L}}, NULL);
             continue;
         }
@@ -201,7 +194,6 @@ void* write_runner(void* arg)
 
             fwrite(&pixels_r, sizeof(char), strlen(pixels_r), pFile_r);
 
-
             char pixels_c[15 * arg_struct->param_l + 1];
             char* p_c = pixels_c;
             for ( int jx=0; jx < arg_struct->param_l; ++jx ){
@@ -216,7 +208,6 @@ void* write_runner(void* arg)
             *(p_c) = '\n';
             *(p_c+1) = '\0';
             fwrite(&pixels_c, sizeof(char), strlen(pixels_c), pFile_c);
-
       }
     }
     free(item_done_loc);
@@ -364,9 +355,7 @@ int main(int argc, char *argv[])
     grey_lookup[50] = "250 250 250 ";
     grey_lookup[51] = "255 255 255 ";
 
-
     //-----------------------------------------COMPUTATION:
-
     struct compute_runner_struct args_comp[param_t];
     pthread_t thread_id[param_t];
     for(size_t i=0; i<param_t; ++i)
