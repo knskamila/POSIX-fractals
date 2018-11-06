@@ -16,7 +16,8 @@
 pthread_mutex_t mutex_1 = PTHREAD_MUTEX_INITIALIZER;
 char item_done[50000];
 
-struct compute_runner_struct {
+struct compute_runner_struct
+{
 	char ** as;
 	unsigned char ** it;
 	double ** roots_list;
