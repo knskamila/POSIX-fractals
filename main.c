@@ -98,8 +98,8 @@ void* compute_runner(void* arg)
     for ( size_t ix=arg_struct->ix_start; ix <= arg_struct->ix_stop; ix += arg_struct->ix_step ) {
         for ( size_t jx=0; jx < arg_struct->param_l; ++jx ){
 
-            re = 4.0*(ix - arg_struct->param_l/2.0)/(double)arg_struct->param_l;
-            im = 4.0*(jx - arg_struct->param_l/2.0)/(double)arg_struct->param_l;
+            re = 4.0*(jx - arg_struct->param_l/2.0)/(double)arg_struct->param_l;
+            im = 4.0*(ix - arg_struct->param_l/2.0)/(double)arg_struct->param_l;
 
             converged = 0;
             root = 0;
