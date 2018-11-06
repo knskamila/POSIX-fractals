@@ -276,23 +276,14 @@ int main(int argc, char *argv[])
         char_lookup_table[ix] = (char*) malloc(sizeof(char) * PIXEL_LEN);
 
     char_lookup_table[0] = "130 020 130 ";
-
     char_lookup_table[1] = "135 250 250 ";
-
     char_lookup_table[2] = "135 250 150 ";
-
     char_lookup_table[3] = "200 200 250 ";
-
     char_lookup_table[4] = "130 000 130 ";
-
     char_lookup_table[5] = "100 000 050 ";
-
     char_lookup_table[6] = "180 000 090 ";
-
     char_lookup_table[7] = "255 165 000 ";
-
     char_lookup_table[8] = "220 225 000 ";
-
     char_lookup_table[9] = "100 255 150 ";
 
     //-----------------------------------------grey lookup table:
