@@ -13,10 +13,11 @@ Similarly, there are no formulas for the value nor the derivative for a given ex
 The condition is simply that there must be three arguments given. Arguments starting with respective letters are parsed using `atoi` function.
 
 ## Synchronization of compute and write threads
-Since writing of the file can (and should) begin before all the values are computed and stored in the array, a mutex lock had to be added so that accessing the memory by another thread does not interfere with the functions calculating the roots and iterations. Moreover, an `item_done` array was introduced, which stores the information whether a given line was already computed.
+Since writing of the file can (and should) begin before all the values are computed and stored in the array, a mutex lock had to be added so that accessing the memory by another thread does not interfere with the functions calculating the roots and iterations. For synchronization, an `item_done` array was introduced, which stores the information whether a given line was already computed, allowing for writing the data row by row as soon as the computing is done.
 
 ## Data transfer between compute and write threads
-The writing function checks if the `item_done` value is different from 0. If it's not the case, the thread sleeps, otherwise the data is transferred to `item_done_loc` so that value arrays can be worked on without interrupting the other thread.
+The writing function checks if the `item_done` value of the next row is different from 0. If it's not the case, the thread sleeps, otherwise the data is transferred to `item_done_loc` so that its values can be accessed without interrupting the other thread.
+Since the values in `as` and `it` arrays are computed once and do not depend on each other, they can be accessed given the information which values were already computed.
 
 ## Checking the convergence and divergence conditions
 The points are assumed to have converged if their absolute distance to one of the roots is smaller than the threshold of 10^-3. Furthermore, the center of the coordinate space is treated as a root, since Newton method would never reach convergence for points close to it. Similarly, the iteration does not continue if any part of the number reaches 10^10. 
@@ -82,4 +83,5 @@ The `char_lookup_table` visible above is a predefined array of char values repre
 
 ## Conclusions
 
-While working on the assignment we could see the impact the use of the threads can make, allowing to shorten the execution of the program several times. Furthermore, the performance was clearly negatively impacted by the use of any external functions inside the loops and the use of manually written functions and hard-coded tables was crucial. In particular, the first version of the code utilized standard string functions, which made the code for a single thread and exponent 3 run for 17 seconds. Replacing these functions by pointer operations and using a lookup table of color values as char characters reduced this time to around 1 second.
+While working on the assignment we could see the impact the use of the threads can make, allowing to shorten the execution of the program several times. Furthermore, the performance was clearly negatively impacted by the use of any external functions inside the loops and the use of manually written functions and hard-coded tables was crucial. In particular, the first version of the code utilized standard string functions, which made the code for a single thread and exponent 3 run for 17 seconds. Replacing these functions by pointer operations and using a lookup table of color values as predefined char characters reduced this time to around 1 second.
+After implementing simultaneous reading and writing, the program met the runtime requirements and passed the script. 
