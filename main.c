@@ -233,51 +233,6 @@ int main(int argc, char *argv[])
     }
 
     //-----------------------------------------color lookup table:
-    int ** color_table = (int**) malloc(sizeof(int*) * NUM_COLORS);
-    for ( size_t ix = 0; ix < NUM_COLORS; ++ix )
-        color_table[ix] = (int*) malloc(sizeof(int) * 3);
-
-    color_table[0][0] = 130;
-    color_table[0][1] = 20;
-    color_table[0][2] = 130;
-
-    color_table[1][0] = 135;
-    color_table[1][1] = 250;
-    color_table[1][2] = 250;
-
-    color_table[2][0] = 135;
-    color_table[2][1] = 150;
-    color_table[2][2] = 250;
-
-    color_table[3][0] = 200;
-    color_table[3][1] = 200;
-    color_table[3][2] = 250;
-
-    color_table[4][0] = 130;
-    color_table[4][1] = 0;
-    color_table[4][2] = 130;
-
-    color_table[5][0] = 100;
-    color_table[5][1] = 0;
-    color_table[5][2] = 50;
-
-    color_table[6][0] = 180;
-    color_table[6][1] = 0;
-    color_table[6][2] = 90;
-
-    color_table[7][0] = 255;
-    color_table[7][1] = 165;
-    color_table[7][2] = 0;
-
-    color_table[8][0] = 220;
-    color_table[8][1] = 225;
-    color_table[8][2] = 0;
-
-    color_table[9][0] = 100;
-    color_table[9][1] = 255;
-    color_table[9][2] = 150;
-
-    //-----------------------------------------color lookup table:
     char ** char_lookup_table = (char**) malloc(sizeof(char*) * NUM_COLORS);
     for ( size_t ix = 0; ix < NUM_COLORS; ++ix )
         char_lookup_table[ix] = (char*) malloc(sizeof(char) * PIXEL_LEN);
