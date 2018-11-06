@@ -119,7 +119,7 @@ void* compute_runner(void* arg)
                 re = re + d_re;
                 im = im + d_im;
 
-                if( (temp_1 = re*re) > 10000000000 || (temp_2 = im*im) > 10000000000 || t4 == 0 ){
+                if( (temp_1 = re*re)/10000000000 > 10000000000 || (temp_2 = im*im)/10000000000 > 10000000000 || t4 == 0 ){
                     converged = 1;
                     root = 0;
                     break;
