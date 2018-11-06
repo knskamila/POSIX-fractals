@@ -30,7 +30,7 @@ if( abs(re) > 10000000000 || abs(im) > 10000000000 || t3 < 0.00000000000001 ){
 
 for(int i = 0; i <= c_2; i++)
 {
-          double abs = abs_val2(&re, &im, &arg_struct->roots_list[i][0], &arg_struct->roots_list[i][1]);
+          double abs = abs_val2(&re, &im, &arg_struct->roots_list[i]\[0\], &arg_struct->roots_list[i]\[1\]);
                     if(abs < THRESH*THRESH)
                     {
                               converged = 1;
@@ -44,7 +44,7 @@ As described above, the formulas aren't hardcoded and the program can calculate 
 ~~~~~~
 while(!converged)
 {
-          arg_struct->it[ix][jx]++;
+          arg_struct->it\[ix\]\[jx\]++;
           d_re = c_1 * re;
           d_im = c_1 * im;
           t1 = re;
