@@ -238,7 +238,7 @@ void* write_runner(void* arg)
 
 int main(int argc, char *argv[])
 {
-    int param_t, param_l;
+    unsigned int param_t, param_l;
 
     if(argc != 4)
     {
@@ -259,7 +259,7 @@ int main(int argc, char *argv[])
 
 
     //storing parameter values as string to write later
-    char string_l[10];
+    char string_l[20];
     char string_t[5];
     char char_exponent[1];
     char header[30] = "P3\n";
@@ -277,8 +277,7 @@ int main(int argc, char *argv[])
     strcat(header, " ");
     strcat(header, string_l);
     strcat(header, "\n255\n");
-
-   // printf("t = %d, l = %d, exponent is %d\n", param_t, param_l, exponent);
+    //printf("t = %d, l = %d, exponent is %d\n", param_t, param_l, exponent);
     //printf("filename1: %s\n", filename_attractors);
     //printf("filename2: %s\n", filename_convergence);
 
