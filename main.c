@@ -149,10 +149,8 @@ void* compute_runner(void* arg)
 void* write_runner(void* arg)
 {
     struct write_runner_struct *arg_struct =(struct write_runner_struct*) arg;
-
     char * item_done_loc = (char*)calloc(arg_struct->param_l, sizeof(char));
-        /* Writing */
-
+       
     FILE * pFile_c;
     FILE * pFile_r;
     pFile_r = fopen(arg_struct->filename_attractors, "w");
